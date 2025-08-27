@@ -1,4 +1,4 @@
-* Literate Programming IDE (Emacs Lisp & Org Mode) - Key Features
+* Literate Programming IDE built in Elisp programming language and OrgMode markup language - Key Features
 
 This document summarizes the features of a highly customized Literate Programming IDE built using Emacs Lisp and Emacs Org Mode.
 If you are a programmer, please open the accompanying ide.org file on Github to see the implementation.
