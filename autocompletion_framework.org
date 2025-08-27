@@ -1,0 +1,1099 @@
+* Autocompletion framework built upon Vertico, Consult and Embark elisp libraries
+** My web clippings about the Minad stack. No code, prose only.
+Vertico, an Ivy replacement;  Consult, a Counsel replacement
+
+TODO compare ivy to vertico, [[https://youtu.be/5ffb2at2d7w?t=822][Using Emacs Episode 80 - Vertico, Marginalia, Consult, and Embark - YouTube :: Embark]]
+and decide if vertico can be a better than +helm+ ivy for me.
+#+begin_quote https://old.reddit.com/r/emacs/comments/ol2luk/from_ivy_counsel_to_vertico_consult/#:~:text=Start%20with%20plain,to%20helm-mini.
+1. Start with plain Emacs.
+2. Install vertico and enable vertico-mode to get incremental minibuffer completion.
+3. Install orderless and/or configure the built-in completion styles for more flexible minibuffer filtering.
+4. Install marginalia if you like rich minibuffer annotations. Exisiting commands are enhanced with these annotations, e.g., find-file.
+5. Install embark and add two keybindings for embark-dwim and embark-act. I am using M-. and C-.. These commands allow you to act on the object at point or in the minibuffer. No actions on multiple candidates for now though.
+6. Install consult if you want additional featureful completion commands, e.g, the buffer switcher consult-buffer with preview or the line-based search consult-line. consult-buffer can work with multiple candidate sources similar to helm-mini.
+#+end_quote
+
+#+begin_quote https://lambdaland.org/posts/2023-05-31_warp_factor_refactor/
+Here’s the short of what each package does:
+
+Vertico
+Turns the default minibuffer completion UI into an auto-updating list of candidates. This lets us interact with “candidates”—or more specifically in our case, lines matching a pattern across our entire project—in a fast and accessible way.
+
+Consult
+Adds a bunch of completing-read-based functions. This lets us use ripgrep with Vertico’s UI.
+
+Embark
+Kind of like a generalized keyboard-focused right-click on crazy steroids. This lets us export our list of matches out of Vertico’s UI and into a buffer that wgrep can use.
+#+end_quote
+Try out Vertico with this example usecase: [[https://lambdaland.org/posts/2023-05-31_warp_factor_refactor/][Warp Factor Refactoring in Emacs | Lambda Land]]
+
+[[https://protesilaos.com/codelog/2024-02-17-emacs-modern-minibuffer-packages/][Emacs: modern minibuffer packages (Vertico, Consult, etc.) | Protesilaos Stavrou - youtube video]]
+
+[[https://macowners.club/posts/from-ivy-to-vertico/][From Ivy & Counsel to Vertico & Consult | macOS & (open-source) Software]]
+#+begin_quote https://macowners.club/posts/from-ivy-to-vertico/
+One major one being that Vertico & Consult automagically use the Emacs built-in system completing-read.
+
+Example:
+Instead of using a custom command counsel-find-file for finding files, I can just find-file and Vertico takes over. Other functions/commands using completion will automatically hand over to Vertico as well. No configuration needed on my part. This is munch much better
+#+end_quote
+
+[[https://systemcrafters.net/live-streams/may-21-2021/][Replacing Ivy and Counsel with Vertico and Consult - System Crafters video]]
+
+Awesome vertico custom UI:-
+#+begin_quote https://old.reddit.com/r/emacs/comments/v9w03w/have_the_cool_kids_moved_from_ivy_counsel_to/
+On the whole, Vertico’s flexibility and general quality is so high that it should be considered for inclusion in Emacs core and should be turned on by default. 
+
+The vertico-multiform feature is fabulous and has no equivalent. It permits making completion as in-your-face or as unobtrusive as you want depending on context. Say I want M-x to use posframe in GUI (but not terminal), buffer operations to use unobtrusive display (no big minibuffer), and imenu commands to use grid display.
+
+The relevant snippet looks like this (example changed to my actual display setup: file operations use unobtrusive mode, buffer operations use flat ido-style, and a few other self-explanatory things). Posframe display requires vertico-posframe package.
+#+end_quote
+
+Best comparision by the author of Embark:-
+#+begin_quote https://old.reddit.com/r/emacs/comments/117zdnu/what_are_the_benefits_of_vertico_over_helm_or_ivy/
+[–]oantolinC-x * q 100! RET 28 points 1 year ago 
+This is probably clear to everybody, but taking the question literally, Helm is significantly more featureful than Ivy, which in turn is significantly more featureful than Vertico. I think everybody wisely interpreted the question instead as comparing Helm to Ivy + Swiper + Counsel and to Vertico + Consult + Orderless + Embark + Marginalia + Corfu.
+
+My favorite system is the latter (which you might think is obvious since I wrote Orderless and Embark, but that's not automatic for me: for example, I've written several completion UIs that I used for a while but ditched them for the vastly superior Vertico, so just because I wrote a package doesn't automatically make it my favorite package for that purpose!), but I used Helm and Ivy + Swiper + Counsel previously and they are both great systems. I didn't stop using Helm because I was dissatisfied with it, nor did I stop using Ivy + Swiper + Counsel out of dissatisfaction either. All three systems have a broad base of common functionality with some comparatively small advantages or disavantages over each other. Which is best for you depends on the weight you give to those advantages or disadvantages.
+
+(Also, I should point out none of these systems are pioneers! Icicles has had this broad base of common functionality for decades longer than any of these three!)
+
+So here are the advantages of the Vertico & friends system which I personally value the most (I think they all boil down to generality and configurability):
+
+Consult previews!
+
+Helm and Ivy have great support for actions on completion candidates, but Embark extends this in a uniform way to actions on things found in text buffers. I'm pretty sure I use Embark quite a bit more in regular buffers than in minibuffers now.
+
+Vertico can show completions in the minibuffer, a dedicated buffer, a grid, a horizontal line or only show the top completion; this is configurable per command! This is much more flexible than either Helm or Ivy. And Corfu gives you nice popups at point for completions in regular buffers.
+
+Ivy and Helm offer out of order matching (and Helm at least makes it available as a completion style, so you can use Helm matching with other completion UIs), but Orderless's syntax is highly configurable.
+
+It is easy to add actions to Ivy commands or to Helm commands, but if you have a "normal" command, i.e., one that uses completing-read directly as most Emacs built-in commands, you need to write a small wrapper to make into an Ivy or Helm command before you can add actions; similarly if you have an Emacs command you want to use as an action you need to write a small wrapper before you can use it as an action for an Ivy or Helm command. With Embark, any command can use any other command as an action, and the action does not need to be registered in advance as an action. This is obviously not a very big deal: was it hard to write a bunch of 3 line wrappers for commands I wanted to use as Ivy actions? Of course not! Was it nice to delete those wrappers and use the commands as actions directly with Embark? Yes! :)
+
+Embark lets you get a persistent buffer with completion candidates for any command so you can inspect them at your leisure and run actions on them later. Helm doesn't have this (it does let you restart any recent Helm command, which can be used for some of the same purposes), and Ivy has it only for Ivy commands, not "normal" commands.
+
+You actually have two choices for these persistent buffers of completion candidates: Embark can "export" to major mode specific to the type of candidates (like dired for files, ibuffer for buffers, package-menu-mode for packages, grep-mode or occur-mode for search results, etc), or it can make an Embark Collect buffer, which works for any type of candidate at all and is dired-like: you can mark multiple candidates and run an action on all of them at once. I really enjoy the export version which reuses mode I already know and love, and consider the collect buffers as more of a back up for when there is no relevant major mode. In both cases, Embark lets you easily rerun the command you got the candidates from so you can get updated candidates for that input, or even tweak the input a bit before re-exporting or re-collecting.
+#+end_quote
+#+begin_quote https://github.com/oantolin/embark
+This is how Embark manages to reuse normal commands as actions. The mechanism allows you to use as Embark actions commands that were not written with Embark in mind (and indeed almost all actions that are bound by default in Embark’s action keymaps are standard Emacs commands). It also allows you to write new custom actions in such a way that they are useful even without Embark.
+#+end_quote
+
+#+begin_quote https://old.reddit.com/r/emacs/comments/x7ahgz/how_many_of_you_switched_from_ivycounsel_or_helm/
+[–]offby2doom | holy | 🐍 7 points 2 years ago 
+I've struggled to grok the outlines of the completion frameworks in Emacs. Would you mind sharing the pages or documentation that helped you gain that understanding?
+
+permalinkembedsaveparentreportreply
+
+[–]WallyMetropolis 29 points 2 years ago* 
+I'm not sure exactly what you're asking for, but here's a shot:
+
+I think a good place to start is to read the documentation for completing-read and play with some very simple examples, like put this in some elisp buffer:
+
+(completing-read "Animals: " '(cat dog walrus))
+And see what happens when eval that if you have vertico-mode on or off. So you'll sort of get the sense that vertico (or selectrum) are for displaying possible completions from a completing-read. Without it, you can't explore the options, but you can still enter the first character and tab-complete them.
+
+But that's just for minibuffer completions. If you want completion in a regular buffer, generally prompted by a "TAB" you'd use company or maybe corfu.
+
+So then the question is: where do the completion options come from? Part of the answer is determined by the completion style, which the emacs docs describe as a set of rules for generating completions. Orderless and Prescient are examples. They will filter down a large list of possible completions based on certain criteria.
+
+Consult provides further tools to generate and combine lists for different purposes, as well as previewing selections as you cycle through them. So for example, if you have several themes downloaded, consult-theme can identify that and provide you with a completion list of the names of those themes. It also "does what you mean" when you select an option. So again, for consult-theme, it knows that if you select a theme from the list, it should disable any other active theme and enable the selected one, instead of just returning the selection as normal.
+
+Marginalia just adds some flair to the completion UI (vertico/selectrum) to show some documentation about each option.
+
+Embark is a bit of a separate thing entirely that is somewhat independent to, but plays well with, completions. It basically lets you call a context-aware function and enter the object you've selected as the argument to that function. So if you've selected a symbol in an elisp buffer, Embark would offer you various functions to run that can accept a symbol as an argument. I'll often use it to look up the documentation for functions, variables and so on for the currently-selected completion in a minibuffer.
+#+end_quote
+
+#+begin_quote https://old.reddit.com/r/emacs/comments/x7ahgz/how_many_of_you_switched_from_ivycounsel_or_helm/
+I find it snappier than ivy
+
+Any package by @minad or @oantolin is of the highest quality.
+#+end_quote
+
+doom-emacs made @minad-stack its default.
+#+begin_quote https://old.reddit.com/r/emacs/comments/x7ahgz/how_many_of_you_switched_from_ivycounsel_or_helm/
+The vertico module on Doom Emacs contains the following packages:
+
+consult
+consult-flycheck
+embark
+embark-consult
+marginalia
+orderless
+vertico
+vertico-posframe
+wgrep
+#+end_quote
+
+
+#+begin_quote https://github.com/oantolin/embark
+Users of the popular which-key package may prefer to use the embark-which-key-indicator from the Embark wiki. Just copy its definition from the wiki into your configuration and customize the embark-indicators user option to exclude the mixed and verbose indicators and to include embark-which-key-indicator.
+
+If you use Vertico, there is an even easier way to get a which-key-like display that also lets you use completion to narrow down the list of alternatives, described at the end of the next section
+#+end_quote
+
+#+begin_quote https://github.com/oantolin/embark
+Embark cooperates well with the Marginalia and Consult packages. Neither of those packages is a dependency of Embark, but both are highly recommended companions to Embark, for opposite reasons: Marginalia greatly enhances Embark’s usefulness, while Embark can help enhance Consult.
+#+end_quote
+#+begin_quote https://github.com/oantolin/embark
+If you use both Consult and Embark you should install the embark-consult package
+#+end_quote
+#+begin_quote https://github.com/oantolin/embark
+And some videos[on Embark] to watch:
+#+end_quote
+
+A trick to making @minad my elisp mentor:- [[file:~/Dropbox/job.org::*Make @Minad my mentor][Make @Minad my mentor]]
+
+#+begin_quote https://old.reddit.com/r/emacs/comments/l99xc8/consult_got_support_for_multiple_candidate_sources/
+Right now Consult has a layered architecture. consult--multi -> consult--read --> completing-read --> Selectrum, Icomplete, default completion. I think I prefer this layered, bottom-up architecture since it stacks complexity/functionality step by step.
+#+end_quote
+
+** Vertico
+#+begin_quote https://github.com/minad/vertico
+In order to get accustomed with the package ecosystem, I recommend the following quick start approach:
+
+Start with plain Emacs (emacs -Q).
+Install and enable Vertico to get incremental minibuffer completion.
+Install Orderless and/or configure the built-in completion styles for more flexible minibuffer filtering.
+Install Marginalia if you like rich minibuffer annotations.
+Install Embark and add two keybindings for embark-dwim and embark-act. I am using the mnemonic keybindings M-. and C-. since these commands allow you to act on the object at point or in the minibuffer.
+Install Consult if you want additional featureful completion commands, e.g., the buffer switcher consult-buffer with preview or the line-based search consult-line.
+Install Embark-Consult and Wgrep for export from consult-line to occur-mode buffers and from consult-grep to editable grep-mode buffers.
+Fine tune Vertico with extensions.
+#+end_quote
+
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+;; Enable vertico
+(use-package vertico
+  :custom
+  ;; (vertico-scroll-margin 0) ;; Different scroll margin
+  (vertico-count 25) ;; Show more candidates
+  ;; (vertico-resize t) ;; Grow and shrink the Vertico minibuffer
+  ;; (vertico-cycle t) ;; Enable cycling for `vertico-next/previous'
+  :init
+  (vertico-mode)
+  :bind
+  (<<vertico/bind>>)
+  :hook
+  <<vertico/hook>>
+  :config
+  <<vertico/config>>)
+#+end_src
+
+Vertico wiki is a great resource. Vertico doesnt have a documentation page, the wiki is where you go to learn: [[https://github.com/minad/vertico/wiki][Home · minad/vertico Wiki]]
+
+#+begin_src emacs-lisp :noweb-ref "Emacs customisations suggested by @Minad in his Vertico readme"
+;; Persist history over Emacs restarts. Vertico sorts by history position.
+(use-package savehist
+  :init
+  (savehist-mode))
+
+;; A few more useful configurations...
+(use-package emacs
+  :custom
+  ;; Hide commands in M-x which do not work in the current mode.  Vertico
+  ;; commands are hidden in normal buffers. This setting is useful beyond
+  ;; Vertico.
+  (read-extended-command-predicate #'command-completion-default-include-p)
+  :init
+  ;; Add prompt indicator to `completing-read-multiple'.
+  ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
+  (defun crm-indicator (args)
+    (cons (format "[CRM%s] %s"
+                  (replace-regexp-in-string
+                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                   crm-separator)
+                  (car args))
+          (cdr args)))
+  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
+
+  ;; Do not allow the cursor in the minibuffer prompt
+  (setq minibuffer-prompt-properties
+        '(read-only t cursor-intangible t face minibuffer-prompt))
+  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode))
+#+end_src
+
+#+begin_quote https://kristofferbalintona.me/posts/202202211546/#fn:2
+When using a command for selecting a file in the minibuffer, the following fixes the path so the path you select doesn’t have prepended junk left behind
+#+end_quote
+#+begin_src emacs-lisp :noweb-ref "vertico/hook"
+(rfn-eshadow-update-overlay . vertico-directory-tidy)
+#+end_src
+
+I want tab completions inside eshell to use vertico completion. Stolen from [[https://emacs.stackexchange.com/questions/80866/in-shell-buffer-how-do-to-configure-tab-key-to-behave-vertically-like-ve][here]]
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+;; Use `consult-completion-in-region' if Vertico is enabled.
+;; Otherwise use the default `completion--in-region' function.
+(setq completion-in-region-function
+      (lambda (&rest args)
+        (apply (if vertico-mode
+                   #'consult-completion-in-region
+                 #'completion--in-region)
+               args)))
+#+end_src
+
+** Keybindings for common tasks
+These were bound to Ivy and Helm alternatives. Lets switch them back to emacs default keybindings. Because, Vertico plays well with builtin emacs commands.
+#+begin_src emacs-lisp :noweb-ref "vertico/bind"
+("C-x C-r" . recentf)
+#+end_src
+** find file
+I hate that I have to double tab for completion. Fix it by reading [[https://oremacs.com/swiper/#key-bindings-for-single-selection-action-then-exit-minibuffer][Ivy User Manual]]
+To replicate the behaviour of how helm does completion during file finding, I need to rebind RET to ~ivy-alt-done~.
+#+begin_src emacs-lisp :noweb-ref "To/counsel/config"
+(bind-keys :map counsel-find-file-map
+           ("<return>" . ivy-alt-done))
+#+end_src
+
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(defun anup/routed/find-file (&optional _prefix)
+  "If C-x C-f is called with a prefix argument, open files in current project. Open file with sudo if two prefix arguments are given."
+  (interactive "P")
+  (cond ((equal current-prefix-arg '(4))
+         ;;nil means dont create a new window, reuse current window to open the file in project
+         (find-file-in-project nil))
+        (t (call-interactively 'find-file-at-point))))
+
+(global-set-key (kbd "C-x C-f") 'anup/routed/find-file)
+(global-set-key (kbd "C-x C-d") 'anup/routed/find-file)
+(global-set-key (kbd "C-x d") 'anup/routed/find-file)
+#+end_src
+
+Below is stolen from [[https://github.com/minad/vertico/wiki#candidate-display-transformations-custom-candidate-highlighting][Home · minad/vertico Wiki]]
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+<<Show directories in blue color while find-file>>
+#+end_src
+
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+<<Show the currently enabled minor modes in greenish color inside M-x menu>>
+#+end_src
+
+*** Show directories in blue color
+~+vertico-transform-functions~ is a variable that is defined as part of the Vertico Multiform installtion.
+#+begin_src emacs-lisp :noweb-ref "Define a variable that will be used for customizing vertico multiform"
+(defvar +vertico-transform-functions nil)
+#+end_src
+Caution: This variable is also used in [[*Buffers that are in read-only mode should be green in color inside Vertico][this other org heading]]
+
+#+begin_src emacs-lisp :noweb-ref "Show directories in blue color while find-file"
+(cl-defmethod vertico--format-candidate :around
+  (cand prefix suffix index start &context ((not +vertico-transform-functions) null))
+  (dolist (fun (ensure-list +vertico-transform-functions))
+    (setq cand (funcall fun cand)))
+  (cl-call-next-method cand prefix suffix index start))
+
+(defun +vertico-highlight-directory (file)
+  "If FILE ends with a slash, highlight it as a directory."
+  (if (string-suffix-p "/" file)
+      (propertize file 'face 'marginalia-file-priv-dir) ; or face 'dired-directory
+    file))
+
+;; add-to-list works if 'file isn't already in the alist
+;; setq can be used but will overwrite all existing values
+(add-to-list 'vertico-multiform-categories
+             '(file
+               (+vertico-transform-functions . +vertico-highlight-directory)))
+#+end_src
+
+*** Show currently enabled modes in green color in M-x menu
+#+begin_src emacs-lisp :noweb-ref "Show the currently enabled minor modes in greenish color inside M-x menu"
+;; function to highlight enabled modes similar to counsel-M-x
+(defun +vertico-highlight-enabled-mode (cmd)
+  "If MODE is enabled, highlight it as font-lock-constant-face."
+  (let ((sym (intern cmd)))
+    (if (or (eq sym major-mode)
+            (and
+             (memq sym minor-mode-list)
+             (boundp sym)))
+      (propertize cmd 'face 'font-lock-string-face)
+      cmd)))
+
+(add-to-list 'vertico-multiform-commands
+             '(execute-extended-command 
+               (+vertico-transform-functions . +vertico-highlight-enabled-mode)))
+#+end_src
+*** DONE Intelligent C-x C-f
+If cursor is on some text that looks like a file name, it should be copy pasted into find file. Just use ~find-file-at-point~
+
+** Orderless
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+;; Optionally use the `orderless' completion style.
+(use-package orderless
+  :custom
+  ;; Configure a custom style dispatcher (see the Consult wiki)
+  ;; (orderless-style-dispatchers '(+orderless-consult-dispatch orderless-affix-dispatch))
+  ;; (orderless-component-separator #'orderless-escapable-split-on-space)
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides '((file (styles partial-completion)))))
+#+end_src
+
+** Marginalia
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+;; Enable rich annotations using the Marginalia package
+(use-package marginalia
+  ;; Bind `marginalia-cycle' locally in the minibuffer.  To make the binding
+  ;; available in the *Completions* buffer, add it to the
+  ;; `completion-list-mode-map'.
+  :bind (:map minibuffer-local-map
+         ("M-A" . marginalia-cycle))
+
+  ;; The :init section is always executed.
+  :init
+
+  ;; Marginalia must be activated in the :init section of use-package such that
+  ;; the mode gets enabled right away. Note that this forces loading the
+  ;; package.
+  (marginalia-mode))
+#+end_src
+Marginalia does cause slowdown in =C-h f= menu etc. But, I find it super useful for =C-h v=. Hence, I will tolerate the performance penalty.
+** Embark
+I was really inspired by this blogpost [[https://karthinks.com/software/fifteen-ways-to-use-embark/][Fifteen ways to use Embark | Karthinks]]
+
+#+begin_quote https://karthinks.com/software/fifteen-ways-to-use-embark/
+embark-act: Actually…. & But first…
+embark-act is your “Actually…” command. As in, I called package-install and picked a package but actually I’d like to read the package description instead!
+
+embark-act is your “Yes, but first…” command as well. As in, I called find-file but first I’d like to copy it elsewhere to be safe, then continue to open this file!
+
+Or perhaps you want to think of it as a keyboard driven analog of a "right-click" menu in a GUI environment. That works too, but the former maps better to the idea of "late-binding" and laziness that I think of Embark as enabling.
+#+end_quote
+
+#+begin_quote https://github.com/oantolin/embark
+Embark also has the embark-become command which is useful for when you run a command, start typing at the minibuffer and realize you meant a different command. The most common case for me is that I run switch-to-buffer, start typing a buffer name and realize I haven’t opened the file I had in mind yet! I’ll use this situation as a running example to illustrate embark-become. When this happens I can, of course, press C-g and then run find-file and open the file, but this requires retyping the portion of the file name you already typed. This process can be streamlined with embark-become: while still in the switch-to-buffer you can run embark-become and effectively make the switch-to-buffer command become find-file for this run.
+
+You can bind embark-become to a key in minibuffer-local-map, but it is also available as an action under the letter B (uppercase), so you don’t need a binding if you already have one for embark-act. So, assuming I have embark-act bound to, say, C-., once I realize I haven’t open the file I can type C-. B C-x C-f to have switch-to-buffer become find-file without losing what I have already typed in the minibuffer.
+#+end_quote
+
+Default config as per its readme:-
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(use-package embark
+  :bind
+  (("C-." . embark-act)
+   <<Bind embark-dwim>>
+   ("C-h B" . embark-bindings)  ;; alternative for `describe-bindings'
+
+   :map embark-file-map
+   <<embark/bind/embark-file-map>>
+
+   :map embark-general-map
+   <<embark/bind/embark-general-map>>)
+  
+  :init
+  ;; Optionally replace the key help with a completing-read interface
+  (setq prefix-help-command #'embark-prefix-help-command)
+
+  ;; Show the Embark target at point via Eldoc. You may adjust the
+  ;; Eldoc strategy, if you want to see the documentation from
+  ;; multiple providers. Beware that using this can be a little
+  ;; jarring since the message shown in the minibuffer can be more
+  ;; than one line, causing the modeline to move up and down:
+
+  ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
+  ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
+
+  :config
+  ;; Hide the mode line of the Embark live/completions buffers
+  (add-to-list 'display-buffer-alist
+	       '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+		 nil
+		 (window-parameters (mode-line-format . none))))
+  
+  <<embark/config>>)
+#+end_src
+
+#+begin_quote https://github.com/oantolin/embark
+There is also embark-dwim which runs the default action for the first target found. It’s pretty handy in non-minibuffer buffers.
+Eg:- Open the URL at point in a web browser
+In an Emacs Lisp buffer, if point is on an opening parenthesis or right after a closing one, it will evaluate the corresponding expression. (This kinda replicates functionality of Lispy.el by @abo-abo)
+#+end_quote
+So, lets bind embark-dwim to a convenient key
+#+begin_src emacs-lisp :noweb-ref "Bind embark-dwim"
+("C-;" . embark-dwim)
+#+end_src
+
+*** Open current find-file candidate as sudo
+Stolen from [[https://github.com/oantolin/embark/wiki/Additional-Actions][embark wiki]]
++Make use of the =sudo-edit= function provided by another package.+ It is buggy when used as an embark action. It buggily acts on the current buffer, not the embark selection.
+Hence, a helper function stolen from Karthinks
+#+begin_src emacs-lisp :noweb-ref "embark/config"
+(defun sudo-find-file (file)
+  "Open FILE as root."
+  (interactive "FOpen file as root: ")
+  (when (file-writable-p file)
+    (user-error "File is user writeable, aborting sudo"))
+  (find-file (if (file-remote-p file)
+                 (concat "/" (file-remote-p file 'method) ":"
+                         (file-remote-p file 'user) "@" (file-remote-p file 'host)
+                         "|sudo:root@"
+                         (file-remote-p file 'host) ":" (file-remote-p file 'localname))
+               (concat "/sudo:root@localhost:" file))))
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref "embark/bind/embark-file-map"
+;;("S" . sudo-edit)
+("S" . sudo-find-file)
+#+end_src
+
+Above doesnt work inside counsel-recentf. For that, I need to define in the embark general map too:-
+#+begin_src emacs-lisp :noweb-ref "embark/bind/embark-general-map"
+;;("S" . sudo-edit)
+("S" . sudo-find-file)
+#+end_src
+
+Example usecase:-
+=C-x C-r= and locate ~/etc/hosts~
+=C-.= to invoke =embark-act=. Mnemonic: /embark actually/, ie Actually I meant to open this file as root user.
+Press =S= to sudo-edit
+
+
+*** Embark kill buffer action
+#+begin_src emacs-lisp :noweb-ref "embark/bind/embark-general-map"
+("k" . kill-buffer)
+#+end_src
+
+These two lines allow you to kill buffers  without closing the mini-buffer and without a confirmation respectively.
+#+begin_src emacs-lisp :noweb-ref "embark/config"
+(setq embark-quit-after-action '((t . t) (kill-buffer . nil)))
+(setf (alist-get 'kill-buffer embark-pre-action-hooks) nil)
+#+end_src
+Leaving minibuffer open to quickly kill multiple buffers if needed.
+
+The odd looking ~'(t .t)~ is for specifying a default for all other actions.
+ie, for all other embark actions, by default, do quit the minibuffer.
+** Smex - recently used M-x commands show at top
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(use-package smex
+  :config
+  (smex-initialize))
+#+end_src
+smex saves the recently used commands to a file on disk.
+Vertico automagically picks up that file.
+** Consult
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+;; Example configuration for Consult
+(use-package consult
+  :bind
+  (
+   ;;("M-s" . consult-ripgrep)  ;;I prefer to use M-s as a prefix key
+   ([remap Info-search] . consult-info)
+   ("M-g M-g" . consult-goto-line)
+   ("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
+   ;;("M-s r" . consult-ripgrep)             ;; I prefer to use helm-rg bound to M-g M-s instead
+   :map org-mode-map
+   ;;("M-g h" . consult-org-heading)
+   ("M-g h" . consult-org-heading)
+   )
+  ;; Replace bindings. Lazily loaded by `use-package'.
+  ;;;;;;;;Re-enable after making M-s a prefix key
+  ;;;;;;          :bind (;; C-c bindings in `mode-specific-map'
+  ;;;;;;                 ("C-c M-x" . consult-mode-command)
+  ;;;;;;                 ("C-c h" . consult-history)
+  ;;;;;;                 ("C-c k" . consult-kmacro)
+  ;;;;;;                 ("C-c m" . consult-man)
+  ;;;;;;                 ("C-c i" . consult-info)
+  ;;;;;;                 ;; C-x bindings in `ctl-x-map'
+  ;;;;;;                 ("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
+  ;;;;;;                 ("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
+  ;;;;;;                 ;; Custom M-# bindings for fast register access
+  ;;;;;;                 ("M-#" . consult-register-load)
+  ;;;;;;                 ("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
+  ;;;;;;                 ("C-M-#" . consult-register)
+  ;;;;;;                 ;; Other custom bindings
+  ;;;;;;                 ("M-y" . consult-yank-pop)                ;; orig. yank-pop. I found the posframe annoying for this.
+  ;;;;;;                 ;; M-g bindings in `goto-map'
+  ;;;;;;                 ("M-g e" . consult-compile-error)
+  ;;;;;;                 ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
+  ;;;;;;                 ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
+  ;;;;;;                 ("M-g m" . consult-mark)
+  ;;;;;;                 ("M-g k" . consult-global-mark)
+  ;;;;;;                 ("M-g i" . consult-imenu)
+  ;;;;;;                 ("M-g I" . consult-imenu-multi)
+  ;;;;;;                 ;; M-s bindings in `search-map'
+  ;;;;;;                 ("M-s d" . consult-find)                  ;; Alternative: consult-fd. Found it confusing. I prefer find-file-in-project
+  ;;;;;;                 ("M-s c" . consult-locate)
+  ;;;;;;                 ("M-s g" . consult-grep)
+  ;;;;;;                 ("M-s G" . consult-git-grep)
+  ;;;;;;                 
+  ;;;;;;                 ("M-s l" . consult-line)
+  ;;;;;;                 ("M-s L" . consult-line-multi)
+  ;;;;;;                 ("M-s k" . consult-keep-lines)
+  ;;;;;;                 ("M-s u" . consult-focus-lines)
+  ;;;;;;                 ;; Isearch integration
+  ;;;;;;                 ("M-s e" . consult-isearch-history)
+  ;;;;;;                 :map isearch-mode-map
+  ;;;;;;                 ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
+  ;;;;;;                 ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
+  ;;;;;;                 ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
+  ;;;;;;                 ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
+  ;;;;;;                 ;; Minibuffer history
+  ;;;;;;                 :map minibuffer-local-map
+  ;;;;;;                 ("M-s" . consult-history)                 ;; orig. next-matching-history-element
+  ;;;;;;                 ("M-r" . consult-history))                ;; orig. previous-matching-history-element
+
+  ;; Enable automatic preview at point in the *Completions* buffer. This is
+  ;; relevant when you use the default completion UI.
+  :hook (completion-list-mode . consult-preview-at-point-mode)
+
+  ;; The :init configuration is always executed (Not lazy)
+  :init
+
+  ;; Optionally configure the register formatting. This improves the register
+  ;; preview for `consult-register', `consult-register-load',
+  ;; `consult-register-store' and the Emacs built-ins.
+  (setq register-preview-delay 0.5
+        register-preview-function #'consult-register-format)
+
+  ;; Optionally tweak the register preview window.
+  ;; This adds thin lines, sorting and hides the mode line of the window.
+  (advice-add #'register-preview :override #'consult-register-window)
+
+  ;; Configure other variables and modes in the :config section,
+  ;; after lazily loading the package.
+  :config
+
+  ;; Optionally configure preview. The default value
+  ;; is 'any, such that any key triggers the preview.
+  ;; (setq consult-preview-key 'any)
+  ;; (setq consult-preview-key "M-.")
+  ;; (setq consult-preview-key '("S-<down>" "S-<up>"))
+  ;; For some commands and buffer sources it is useful to configure the
+  ;; :preview-key on a per-command basis using the `consult-customize' macro.
+  (consult-customize
+   consult-theme :preview-key '(:debounce 0.2 any)
+   consult-ripgrep consult-git-grep consult-grep
+   consult-bookmark consult-recent-file consult-xref
+   consult--source-bookmark consult--source-file-register
+   consult--source-recent-file consult--source-project-recent-file
+   ;; :preview-key "M-."
+   :preview-key '(:debounce 0.4 any))
+
+  ;; Optionally configure the narrowing key.
+  ;; Both < and C-+ work reasonably well.
+  (setq consult-narrow-key "<") ;; "C-+"
+
+  ;; Optionally make narrowing help available in the minibuffer.
+  ;; You may want to use `embark-prefix-help-command' or which-key instead.
+  ;; (keymap-set consult-narrow-map (concat consult-narrow-key " ?") #'consult-narrow-help)
+
+  <<consult/config>>
+)
+#+end_src
+
+*** COMMENT Consult recentf include files opened by other programs (such as Okular) and sort candidates by recency
+^disabled because it has bugs when ~ssh guix1~ files listed in recentf
+
+This section is copy pasted from Minad's consult wiki
+#+begin_quote https://github.com/minad/consult/wiki#including-file-recently-used-by-other-programs
+If you find yourself using other programs with Emacs, it can be helpful to include files used by other programs in the candidate lists of commands like consult-recent-file and consult-buffer. That way, you never have any mental hiccups when trying to open files in Emacs that you recently opened in a different program. Instead, you simply use the same interface with which you are already familiar.
+#+end_quote
+
+This library works only on systems that comply with XDG specification
+#+begin_src emacs-lisp :noweb-ref "consult/config"
+(use-package consult-xdg-recent-files
+  :straight '(consult-xdg-recent-files :host github :repo "hrehfeld/consult-xdg-recent-files"))
+
+(require 'cl-lib)
+
+(defun consult--recent-system-files ()
+  "Return a list of files recently used by the system."
+  (cl-case system-type
+    (gnu/linux
+     (consult--xdg-recent-file-list))
+    (t
+     (message "consult-recent-file: \"%s\" currently unsupported"
+              system-type)
+     '())))
+
+(defun consult--recent-files-sort (file-list)
+  "Sort the FILE-LIST by modification time, from most recent to least recent."
+  (thread-last
+      file-list
+    ;; Use modification time, since getting file access time seems to count as
+    ;; accessing the file, ruining future uses.
+    (mapcar (lambda (f)
+              (cons f (file-attribute-modification-time (file-attributes f)))))
+    (seq-sort (pcase-lambda (`(,f1 . ,t1) `(,f2 . ,t2))
+                ;; Want existing, most recent, local files first.
+                (cond ((or (not (file-exists-p f1))
+                           (file-remote-p f1))
+                       nil)
+                      ((or (not (file-exists-p f2))
+                           (file-remote-p f2))
+                       t)
+                      (t (time-less-p t2 t1)))))
+    (mapcar #'car)))
+
+(defun consult--recent-files-mixed-candidates ()
+  "Return a list of files recently used by Emacs and the system.
+
+These files are sorted by modification time, from most recent to least."
+  (thread-last
+      (consult--recent-system-files)
+    (seq-filter #'recentf-include-p)
+    (append (mapcar #'substring-no-properties recentf-list))
+    delete-dups
+    (consult--recent-files-sort)))
+
+(defcustom consult-include-system-recent-files nil
+  "Whether to include files used by other programs in `consult-recent-file'."
+  :type 'boolean
+  :group 'consult)
+
+;;;###autoload
+(defun consult-recent-file ()
+  "Find recent using `completing-read'."
+  (interactive)
+  (find-file
+   (consult--read
+    (or (mapcar #'abbreviate-file-name
+                (if consult-include-system-recent-files
+                    (consult--recent-files-mixed-candidates)
+                  recentf-list))
+        (user-error "No recent files"))
+    :prompt "Find recent file: "
+    :sort nil
+    :require-match t
+    :category 'file
+    :state (consult--file-preview)
+    :history 'file-name-history)))
+#+end_src
+
+I dislike preview of recentf contents. Disable it
+#+begin_src emacs-lisp :noweb-ref "consult/config"
+(defun anoop/consult-recent-file ()
+  (interactive)
+  (let ((consult-preview-excluded-files '("."))
+        (consult-preview-excluded-buffers '(".")))
+    (consult-recent-file)))
+#+end_src
+^Currently, its shows a preview, only if the matching buffer is already open in emacs
+
+** Embark-Consult
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+;; Consult users will also want the embark-consult package.
+(use-package embark-consult
+  :ensure t ; only need to install it, embark loads it after consult if found
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+#+end_src
+
+** Wgrep
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(use-package wgrep)
+#+end_src
+
+** Switch to buffer
+It should include buffers from all frames
+
+~buffer-list~ when called with a frame will order the buffers based on that frame's recency. Buffers from other frames will be *included* too.
+
+Filter out boring buffers
+#+begin_src emacs-lisp :noweb-ref "Sorted list of buffers"
+(anup/remove-matching-items (mapcar #'buffer-name (buffer-list (selected-frame)))
+                            '("\\`\\*tramp/" "\\` \\*" "\\`\\*Echo Area" "\\`\\*Minibuf" "\\`\\*helm" "\\`\\*Compile-Log" "\\`\\*straight-process" "\\`\\*quelpa-build-checkout" "tq-temp-epdfinfo" "magit-process:*" "*Kill Ring*" "*XELB-DEBUG*"))
+#+end_src
+
+This list needs a minor tweak. The current buffer is at the top of the list. Better to push the current buffer to the bottom of the list.
+#+begin_src emacs-lisp :noweb-ref "A list of buffers to switch to"
+(let* ((buffer-names <<Sorted list of buffers>>)
+       (current-buffer-name (car buffer-names))
+       (other-buffer-names (cdr buffer-names))
+       (list-of-buffers-to-switch-to (append other-buffer-names (list current-buffer-name)))
+       (list-of-buffers-to-switch-to <<Mark them as buffer>>))
+  list-of-buffers-to-switch-to)
+#+end_src
+
+If I annotate my list of completion candidates with the metadata of ~'buffer~, then, vertico is able to provide more context aware info about them.
+I stole a helper command for adding metadata from [[https://kisaragi-hiu.com/emacs-completion-metadata/][here]] and added it to [[*Helper functions][my helper functions.]]
+
+#+begin_quote https://www.gnu.org/software/emacs/manual/html_node/elisp/Completion-Variables.html
+category is a symbol describing what is being completed; currently, the buffer, file, and unicode-name categories are defined
+#+end_quote
+#+begin_src emacs-lisp :noweb-ref "Mark them as buffer"
+(anoop/mark-category list-of-buffers-to-switch-to 'buffer)
+#+end_src
+
+Make a call to Vertico, through making a call to builtin ~completing-read~
+#+begin_src emacs-lisp :noweb-ref "Call Vertico and Get the name of the buffer to switch to"
+(completing-read "Switch to Buffer: " <<A list of buffers to switch to>>)
+#+end_src
+
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+<<Helpers for anoop/switch-to-buffer>>
+(defun anoop/switch-to-buffer ()
+  (interactive)
+  (switch-to-buffer <<Temporarily trick vertico into altering its face behaviour. And its sorting behaviour. Then call completing-read in that trickster environment to get the name of the buffer to switch to.>>))
+
+(global-set-key (kbd "C-x b") 'anoop/switch-to-buffer)
+;;(global-set-key (kbd "C-x C-b") 'anoop/switch-to-buffer) ;;because, its bound to helm version
+#+end_src
+*** Buffers that are in read-only mode should be green in color inside Vertico
+This green gives me peace of mind.
+
+[[https://github.com/minad/vertico/wiki#candidate-display-transformations-custom-candidate-highlighting][Home · minad/vertico Wiki/Candidate display transformations, custom candtaied highlighting]]
+This functionality expects that ~vertico-multiform-mode~ is enabled. It is a global minor mode that comes bundled with Vertico. Hence, lets enable it.
+#+begin_src emacs-lisp :noweb-ref "vertico/config"
+(use-package vertico-multiform
+  :after vertico
+  :ensure nil ;;installed automatically as part of vertico. Just enabling this optional extension
+  :config
+  (vertico-multiform-mode +1)
+  <<Define a variable that will be used for customizing vertico multiform>>)
+#+end_src
+---------------------------------------------------------------------------------------------------
+A short and sweet working demo:-
+#+begin_src emacs-lisp
+(defun +vertico-greenify-demo (candidate0)
+  "If input string is anoop, turn it into green color"
+  (if (string= candidate0 "anoop")
+      (propertize candidate0 'face 'anoop-read-only-mode-greenish-face)
+    candidate0))
+
+(let ((vertico-multiform-categories  '((symbol (+vertico-transform-functions . +vertico-greenify-demo)))))
+  (completing-read "Notice that anoop is in greenish color: " '(dog cat mousey anoop "anoop")))
+;;; Above is a working demo. Yay!
+#+end_src
+^Caution: Above block might be depending on vertico-multiform config inside [[*Show directories in blue color][this other org heading]]
+Above demo gives me the confidence that my approach is correct. Below, I can neatly implement the above idea.
+---------------------------------------------------------------------------------------------------
+Helper: Given a string buffer name, +check if an emacs buffer of that name is open (always true). If so,+
+check whether that buffer is +open+ in read-only-mode. If so, return true.
+#+begin_src emacs-lisp :noweb-ref "Helpers for anoop/switch-to-buffer"
+(defun anoop/helper/_read-only-p (bname)
+  "Predicate that checks if buffer named bname is open in read only mode"
+  (with-current-buffer bname
+    buffer-read-only))
+#+end_src
+
+Below is created by modifying the example function from vertico wiki
+#+begin_src emacs-lisp :noweb-ref "Helpers for anoop/switch-to-buffer"
+(defun +vertico-greenify-read-only-buffers (completion-candidate-string0)
+  "If buffer is opened in read only mode, add green color to this text"
+  (if (anoop/helper/_read-only-p completion-candidate-string0)
+      (propertize completion-candidate-string0 'face 'anoop-read-only-mode-greenish-face)
+    completion-candidate-string0))
+#+end_src
+
+Let me define a greenish face which is to be applied
+#+begin_src emacs-lisp :noweb-ref "Helpers for anoop/switch-to-buffer"
+(defface anoop-read-only-mode-greenish-face
+  '((t (:foreground "forest green")))
+  "The face used for read only buffers inside Vertico 'C-x b' completion")
+#+end_src
+
+Temporarily alter internal variable of vertico. This variable has the power to change the face of vertico candidates.
+In this trickster environment, ~completing-read~ is duped into using our custom scheme for adding face.
+#+begin_src emacs-lisp :noweb-ref "Temporarily trick vertico into altering its face behaviour. And its sorting behaviour. Then call completing-read in that trickster environment to get the name of the buffer to switch to."
+(let ((vertico-multiform-categories  '(;;I have no idea why both the below are required. But, commenting either one of them -
+                                       ;;-makes greenish color fail to apply
+                                       (symbol (+vertico-transform-functions . +vertico-greenify-read-only-buffers))
+                                       (buffer (+vertico-transform-functions . +vertico-greenify-read-only-buffers))))
+      ;;Below makes vertico not mess with the order of items in the list given to completing-read
+      (vertico-sort-function nil))
+  <<Call Vertico and Get the name of the buffer to switch to>>)
+#+end_src
+
+**** COMMENT inbox
+Vertico multiform can be customized on a per command basis. This trick may be used to provide the same functionality as above /trick environment/. Someday maybe, refactor.
+
+You can learn more about how to configure ~vertico-multiform-categories~ from:-
+#+begin_quote https://kristofferbalintona.me/posts/202202211546/
+ with vertico-multiform-mode as well as configuration of vertico-multiform-categories, vertico-multiform-commands, and keybinds, you can enable/disable multiple of these formats
+#+end_quote
+
+
+** Kill buffers from the buffer list
+#+begin_quote https://old.reddit.com/r/emacs/comments/v9w03w/have_the_cool_kids_moved_from_ivy_counsel_to/
+A keyboard macro is a simple solution here: if you bind embark-act to C-. you can simply bind C-k to C-. k
+#+end_quote
+#+begin_src emacs-lisp
+(define-key vertico-map (kbd "C-k") (kmacro "C-. k"))
+#+end_src
+^Killing a X-buffer results in inconsistent state inside Vertico. This can be fixed if I exit the minibuffer (C-g) and invoke vertico again (C-x b). Do this using kmacro:
+#+begin_src emacs-lisp :noweb-ref "vertico/config"
+(define-key vertico-map (kbd "C-k") (kmacro "C-. k C-g C-x b"))
+#+end_src
+There is a minor bug. To kill EXWM X-buffers, I need to call =C-k= twice.
+
+TODO: Like helm, being able to mark multiple buffers and act on them at once using =C-<space>=
+For killing multiple buffers, just use the helm version until this feature is added.
+
+** COMMENT Posframe
+^Posframe is really pretty! But, it is also somewhat buggy with plenty of paper cuts.
+For example, a really wide filename was causing posframe text rendering to break!
+Also, it is noticably slower than vanilla Vertico.
+Hence, decided to disable Posframe.
+
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(use-package posframe
+  :if (display-graphic-p)
+  :config
+  <<posframe/config>>)
+#+end_src
+
+Banish mouse in posframes, exwm specific setting
+#+begin_src emacs-lisp :noweb-ref "posframe/config"
+(setq posframe-mouse-banish-function #'posframe-mouse-banish-simple)
+#+end_src
+
+Vertico posframe pops up Vertico in a new temperory frame.
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(use-package vertico-posframe
+  :if (display-graphic-p)
+  :config
+  <<vertico-posframe/config>>
+  (vertico-posframe-mode +1))
+#+end_src
+
+#+begin_quote https://github.com/tumashu/vertico-posframe
+How to let vertico-posframe work well with vertico-multiform.
+#+end_quote
+#+begin_src emacs-lisp :noweb-ref "vertico/config"
+(setq vertico-multiform-commands
+      '((consult-line
+         posframe
+         (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
+         (vertico-posframe-border-width . 10)
+         ;; NOTE: This is useful when emacs is used in both in X and
+         ;; terminal, for posframe do not work well in terminal, so
+         ;; vertico-buffer-mode will be used as fallback at the
+         ;; moment.
+         (vertico-posframe-fallback-mode . vertico-buffer-mode))
+
+        <<Dont use posframe for M-. and consult yank pop>>
+        
+        (t posframe)))
+(vertico-multiform-mode 1)
+#+end_src
+
+I dont like the Vertico posframe changing its width and height randomly based on its content.
+Just ask it to use a fixed size.
+#+begin_src emacs-lisp :noweb-ref "vertico-posframe/config"
+(setq vertico-posframe-width 120)
+(setq vertico-posframe-height 30)
+#+end_src
+
+Let me use a fancy custom font inside posframe.
+VC Honey Deck may be a good font for posframe.
+
+#+begin_src emacs-lisp :noweb-ref "vertico-posframe/config"
+;;(setq vertico-posframe-font "Comic Sans MS 18")
+;;(setq vertico-posframe-font "Comic Neue 20")
+(setq vertico-posframe-font "Roboto 20")
+#+end_src
+You can reset the font using (setq vertico-posframe-font nil)
+
+I dont like posframe when browsing the kill ring using consult. So, disable vertico-posframe for that specific command
+#+begin_src emacs-lisp :noweb-ref "Dont use posframe for M-. and consult yank pop"
+(consult-yank-pop (:not posframe))
+(anoop/routed/goto (:not posframe))
+#+end_src
+I still dont like the style used by ~consult-yank-pop~. Only one line is used per entry. I wish it used as many lines per entry as needed by the copied text.
+Someday, I would like to replicate the UI of ~browse-kill-ring~
+
+*** google search
+I would love to run my google searches using posframe. All I need is a small Vertico wrapper for ~browse-url-dwim-search~
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(defun anoop/browse-url-dwim-search ()
+  (interactive)
+  (browse-url-dwim-search (let ((vertico-count-format nil))
+                            (completing-read " Google search for: " '()))))
+
+(global-set-key (kbd "C-c g") 'anoop/browse-url-dwim-search)
+(global-set-key (kbd "C-c C-g") 'anoop/browse-url-dwim-search)
+#+end_src
+^It crashes emacs if invoked at the end of a line containing an image file. Also, its last update was in 2014.
+
+*** posframe for which-key and transient
+#+begin_quote https://old.reddit.com/r/emacs/comments/1fozctm/weekly_tips_tricks_c_thread/
+[–]ImJustPassinBy 13 points 1 month ago* 
+I recently got tired of constantly having to move my eyes to the bottom of Emacs, so I switched to posframes, which moves the information in a central pop-up instead. For me, this meant using the packages:
+
+vertico-posframe - for vertico
+which-key-posframe - for which-key
+transient-posframe - for all transient commands, e.g., in magit or in casual-suite
+But regardless what you are using, chances are there already is a suitable *-posframe package for it. Installing these packages is easy
+#+end_quote
+
+#+begin_src emacs-lisp
+(use-package which-key-posframe
+  :if (display-graphic-p)
+  :init
+  (which-key-posframe-mode +1))
+#+end_src
+I find that which-key doesnt render within the frame sometimes. Its left half is invisible as it overflows the left border of the frame. Hence, disabled it.
+
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(use-package transient-posframe
+  :if (display-graphic-p)
+  :init
+  (transient-posframe-mode +1)
+  :config
+  (setq transient-posframe-min-width 50))
+#+end_src
+^Transient is used by magit prompt.
+
+Here's @minad's opinion on posframe
+#+begin_quote https://gist.github.com/rougier/126e358464e12aa28fac5b4f3dd5eb9c
+Did you consider vertico-posframe instead of mini-frame? From my experience vertico-posframe is slightly more robust. However overall I am critical of using child frames for various technical reasons as documented here. 
+#+end_quote
+Here's Rougier's take on the same: [[https://github.com/rougier/nano-vertico][rougier/nano-vertico: Emacs / nano + vertico]]
+
+Do checkout =company-posframe= and =flycheck-posframe=
+
+I hate that posframes hide the content of the buffer under them.
+
+** COMMENT All the icons in completion buffers
+^Disabled because it did not work for me. Although Treemacs did pick up icons, find-file did not.
+
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(use-package all-the-icons
+  :if (display-graphic-p))
+#+end_src
+
+#+begin_quote https://github.com/domtronn/all-the-icons.el
+Installing Fonts
+In order for the icons to work it is very important that you install the Resource Fonts included in this package, they are available in the fonts directory. You can also install the latest fonts for this package in the (guessed?) based on the OS by calling the following function;
+
+M-x all-the-icons-install-fonts
+Bear in mind, this will also run fc-cache -f -v on MacOS and Linux which can take some time to complete. For Windows, this function will prompt for a download directory for you to install them manually.
+#+end_quote
+
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(use-package all-the-icons-completion
+  :if (display-graphic-p)
+  :after (marginalia all-the-icons)
+  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
+  :init
+  (all-the-icons-completion-mode))
+#+end_src
+** COMMENT Corfu
+^disabled because its buggy on Exwm
+I was facing this exact bug: [[https://github.com/minad/corfu/issues/407][EXWM always show candidates childframe on one monitor · Issue #407 · minad/corfu]]
+There is a hacky fix for this: [[https://forum.systemcrafters.net/t/posframe-multi-head-awareness-in-exwm/515][Posframe Multi-head Awareness in EXWM - Emacs - System Crafters]]
+There are several more [[https://github.com/minad/corfu/discussions/408][Github issues from EXWM users]]
+
+Authored by minad himself!
+
+#+begin_quote https://github.com/minad/corfu
+Company: Company is a widely used and mature completion package, which implements a similar UI as Corfu. While Corfu relies exclusively on the standard Emacs completion API (Capfs), Company defines its own API for the backends. Company includes its own completion backends, following its own API, which are incompatible with the Emacs completion infrastructure. Company provides an adapter company-capf to handle Capfs as a Company backend. As a result of this design, Company is a more complex package than Corfu, three times as large, even without backends. Company by default uses overlays for the popup in contrast to the child frames used by Corfu. Overall both packages work well, but Company integrates less tightly with Emacs. The completion-styles support is more limited and the completion-at-point command and the completion-in-region function do not invoke Company.
+#+end_quote
+
+Config from its readme
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(use-package corfu
+  ;; Optional customizations
+  :custom
+  ;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
+  ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
+  ;; (corfu-preview-current nil)    ;; Disable current candidate preview
+  ;; (corfu-preselect 'prompt)      ;; Preselect the prompt
+  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
+
+  ;; Enable Corfu only for certain modes. See also `global-corfu-modes'.
+  ;; :hook ((prog-mode . corfu-mode)
+  ;;        (shell-mode . corfu-mode)
+  ;;        (eshell-mode . corfu-mode))
+
+  ;; Recommended: Enable Corfu globally.  This is recommended since Dabbrev can
+  ;; be used globally (M-/).  See also the customization variable
+  ;; `global-corfu-modes' to exclude certain modes.
+  :init
+  (global-corfu-mode)
+  :config
+  (setq corfu-quit-no-match 'separator))
+
+;; A few more useful configurations...
+(use-package emacs
+  :custom
+  ;; TAB cycle if there are only few candidates
+  ;; (completion-cycle-threshold 3)
+
+  ;; Enable indentation+completion using the TAB key.
+  ;; `completion-at-point' is often bound to M-TAB.
+  (tab-always-indent 'complete)
+
+  ;; Emacs 30 and newer: Disable Ispell completion function.
+  ;; Try `cape-dict' as an alternative.
+  (text-mode-ispell-word-completion nil)
+
+  ;; Hide commands in M-x which do not apply to the current mode.  Corfu
+  ;; commands are hidden, since they are not used via M-x. This setting is
+  ;; useful beyond Corfu.
+  (read-extended-command-predicate #'command-completion-default-include-p))
+#+end_src
+** COMMENT Open current buffer in an external application
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(use-package mediator
+  :straight '(mediator
+              :type git
+              :host github
+              :repo "dalanicolai/mediator")
+  :config
+  (defalias 'open-current-buffer-in-external-application 'mediator-open-with))
+#+end_src
+Usage tldr: =M-x mediator-open-with=
+** COMMENT App launcher
+#+begin_src emacs-lisp :tangle autocompletion_framework.el
+(use-package app-launcher
+  :vc (:url "https://github.com/SebastienWae/app-launcher")
+  :bind (("C-c p" . app-launcher-run-app)))
+#+end_src
+One downside is, unlike ~counsel-linux-app~, doesnt handle flatpaks out of the box.
+For now, ~counsel-linux-app~ does have this feature, hence switching to that.
+** COMMENT How to make Consult update when the underlying list changes
+I asked this doubt on [[https://old.reddit.com/r/emacs/comments/1gq86x9/weekly_tips_tricks_c_thread_20241113_week_46/lx22fdk/][r/emacs]]
+
+Some hints:- [[https://old.reddit.com/r/emacs/comments/soe1bj/help_with_creating_async_consult_command_with/][Help with creating async Consult command with pipes : emacs]]
+So, I have to learn =consult--async-command=
+
+#+begin_src emacs-lisp
+(consult--async-p 'buffer-list)
+
+;;(consult--async-map buffer-list buffer-name)
+#+end_src
+
+[[https://github.com/minad/consult/discussions/960][additional set of buffers in consult-buffer-sources · minad/consult · Discussion #960]]
+[[https://github.com/minad/consult/issues?q=consult--async][Issues · minad/consult]]
+
+#+begin_src emacs-lisp :lexical t
+;;; -*- lexical-binding: t -*-
+
+(defun consult--async-example ()
+  (thread-first (consult--async-sink)
+    (consult--async-map (lambda (x) (concat "<" x ">")))
+    (consult--async-map (lambda (x) (concat "#" x "#")))
+    ;;(consult--async-refresh)
+    (consult--async-indicator)
+    (consult--async-filter (lambda (x) (not (string-match-p "1" x))))
+    (consult--async-process '("sh" " ls"))))
+
+(consult--read
+ "Test: " (consult--async-example)
+ :sort nil)
+
+#+end_src
+
+Alternative approach, what if buffer creation hook asks ~Vertico~ to re-render itself? This is a more emacsy approach.
+
+Better example code from my reddit question
+#+begin_src emacs-lisp
+(length my-buffer-list)
+
+(defvar my-buffer-list '())
+
+(defun my-create-buffer ()
+  (let ((bname (generate-new-buffer-name "testbuf")))
+    (push bname my-buffer-list)
+    (generate-new-buffer bname)))
+
+(defvar my-timer (run-with-timer 0 5 #'my-create-buffer))
+#+end_src
+
+Both the below fail to rerender existing Vertico.
+#+begin_src emacs-lisp
+(vertico--update)
+(vertico--exhibit)
+(vertico-repeat)
+#+end_src
