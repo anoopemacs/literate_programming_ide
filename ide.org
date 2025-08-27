@@ -1,5 +1,6 @@
 * Literate Programming
-I love Donald Knuth
+I love Donald Knuth's style of programming.
+
 Org babel quick tutorial by howard abrahms: https://gist.github.com/Profpatsch/abda97a7b635f876e29f544a26840666
 
 ** expand :noweb references by default on tangle & eval, but not on export
