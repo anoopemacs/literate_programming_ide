@@ -1,0 +1,2084 @@
+* Literate Programming
+I love Donald Knuth
+Org babel quick tutorial by howard abrahms: https://gist.github.com/Profpatsch/abda97a7b635f876e29f544a26840666
+
+** expand :noweb references by default on tangle & eval, but not on export
+In other words, =C-c C-c= should comprehend the code refered as =\<\<Some Other Block\>\>=
+Because on say, pdf export, I want to retain =\<\<Some Other Block\>\>=  in unexpanded form for readability
+#+begin_src emacs-lisp :tangle new2.el
+(setq org-babel-default-header-args
+      (cons '(:noweb . "no-export")
+            (assq-delete-all :noweb org-babel-default-header-args)))
+#+end_src
+** disable noweb-prefix
+Do not repeat the text before ~<some target>~ when expanding named source blocks.
+
+The below setting will achieve the above feature.
+#+begin_src emacs-lisp
+(setq org-babel-default-header-args
+      (cons '(:noweb-prefix . "no") org-babel-default-header-args))
+#+end_src
+
+But, I want to achieve the above feature before emacs reads this orgfile. Because, this orgfile too makes use of above no-repeat feature.
+File local variables are set before a file is read. Therefore, if above is set as a file local variable, then it will be set before this orgfile is read.
+
+Therefore, I am setting the above code as a file local variable in the current file.
+
+To achieve this, I need to add the above line to the footer of this orgfile, so that it gets loaded *before* this file itself is tangled into new2.el
+Hence, add this to the [[*File Settings][File Settings]] in the footer of this file.
+
+** beautifully render richtext
+/italic/
+*bold*
++strikethrough+
+_underline_
+~code~
+=verbatim=
+#+begin_src emacs-lisp :tangle new2.el
+(setq org-hide-emphasis-markers t)
+#+end_src
+
+Define a symbol for denoting end of a paragraph?
+#+begin_src emacs-lisp :tangle new2.el
+;;(global-set-key (kbd "C-c y") (lambda () (interactive) (insert "§")))
+#+end_src
+
+** Hide '*' symbols in org headings
+Have switched to ~org-hide-leading-stars~ because org-bullets sometimes severely slows down emacs orgmode
+#+begin_src emacs-lisp :tangle new2.el
+;;(setq org-bullets-bullet-list '(" "))
+#+end_src
+^Note that this slightly confuses org-variable-pitch
+This causes the harmless warning: 
+#+begin_quote
+‘org-indent’ is not a valid face, thus OVP skipped it
+#+end_quote
+
+The simpler builtin solution is ~org-hide-leading-stars~
+But, it leaves the last star visible. I dislike this.
+#+begin_src emacs-lisp
+(setq org-hide-leading-stars t)
+#+end_src
+Hence, let me try a dedicated package that hides the stars
+#+begin_src emacs-lisp :tangle new2.el
+(use-package org-starless
+  :vc (:url "https://github.com/TonCherAmi/org-starless")
+  :config
+  (add-hook 'org-mode-hook #'org-starless-mode))
+#+end_src
+
+Because, whenever unhidden, I would love to see how many stars are there. This happens momentarily when org heading is still empty.
+#+begin_src emacs-lisp :noweb-ref "orgmode/custom"
+(org-hide-leading-stars nil)
+#+end_src
+
+
+Below is no longer needed as I have started using org-indent-mode.
+This solution isnt water_leaky0 🙂
+ie, water can leak from the /contents/ out of the /heading/ which causes me tension.
+I need to fix this by getting rid of the leading space character.
+#+begin_src emacs-lisp :tangle new2.el
+;;(defun org-bullets-level-char (level)
+;;  "Always return ''"
+;;  (string-to-char ""))
+#+end_src
+^doesnt work, causes bugs
+
+? ~org-hide-emphasis-markers~
+
+
+** Hide all code
+A true literate programmer's prose is good enough to understand the flow of the program.
+Moreover, I would have written the prose of hard to understand sections twice.
+Once in a formal manner and once more in a casual manner, as suggested by Knuth.
+
+*** COMMENT Therefore, safely hide all src blocks on opening an org file
+^disabled because on migrating from emacs-29 to emacs-30-igc, I started getting a bug while opening job.org file.
+#+begin_src emacs-lisp :hidden :tangle new2.el
+(setq org-hide-block-startup t)
+#+end_src
+
+*** Also, hide drawers such as ~#+RESULTS~.
+This is especially convenient because some of such results drawers are very very long.
+#+begin_src emacs-lisp :hidden :tangle new2.el
+(setq org-hide-drawer-startup t)
+#+end_src
+** Customize colors and font of org headings
+#+begin_src emacs-lisp :noweb-ref "Leuven config"
+(set-face-attribute 'org-level-1 nil
+                    :family "Arcanite Slab"
+                    :height 1.3
+                    :background "misty rose"
+                    :foreground "red3"
+                    :weight 'normal
+                    :overline t)
+(set-face-attribute 'org-level-2 nil
+                    :family "Arcanite Slab"
+                    :height 1.2
+                    :weight 'normal
+                    :overline t)
+(set-face-attribute 'org-level-3 nil
+                    :family "Arcanite Slab"
+                    :height 1.1
+                    :weight 'normal
+                    :overline t)
+(set-face-attribute 'org-level-4 nil
+                    :family "Arcanite Slab"
+                    :foreground "red3"
+                    :weight 'normal
+                    :overline t)
+(set-face-attribute 'org-level-5 nil
+                    :family "Arcanite Slab"
+                    :foreground "blue4"
+                    :weight 'normal
+                    :overline t)
+(set-face-attribute 'org-level-6 nil
+                    :family "Arcanite Slab"
+                    :foreground "green4"
+                    :weight 'normal
+                    :slant 'normal
+                    :overline t)
+#+end_src
+** COMMENT wrapped lines need to be indented properly
+Keep all of the wrapped lines with the parent's indentation
+#+begin_src emacs-lisp
+(use-package adaptive-wrap
+  :config
+  (add-hook 'org-mode-hook 'turn-on-visual-line-mode))
+#+end_src
+** orgmode startup what all to show
+Show me all things unfolded except the /PROPERTIES/
+#+begin_src emacs-lisp :tangle new2.el
+(setq org-startup-folded "nofold")
+#+end_src
+** Org variable pitch
+Wisely auto switches to monospace fonts over checkboxes, headline bullets etc to make them align vertically
+
++I am using serif font =Alegreya= for prose. This font needs to be installed using =yay=+
+Trying out the /Atkinson Hyperlegible/ font family from braille institute. Installed using =yay=
+#+begin_src emacs-lisp :tangle new2.el
+(use-package org-variable-pitch
+  :hook (org-mode . org-variable-pitch-minor-mode)
+  ;;:config
+  ;;(set-face-attribute 'fixed-pitch nil :family "Iosevka")
+  ;;(set-face-attribute 'variable-pitch nil :family "Alegreya")
+  ;;(set-face-attribute 'variable-pitch nil :family "Atkinson Hyperlegible")
+  )
+#+end_src
+Test case:- (Do these 3 checkboxes line up in org mode?)
+- [ ] Unfinished
+- [X] Done
+- [-] Canceled
+** Org Babel Src blocks theme customize
+*** Display hex colors codes in emacs lisp buffers
+This helps greatly when studying & customising some inbuilt color theme
+#+begin_src emacs-lisp :tangle new2.el
+(use-package rainbow-mode
+  :if window-system
+  :hook (emacs-lisp-mode . rainbow-mode)
+  :config
+  (defalias 'show-css-colors-mode0 'rainbow-mode))
+#+end_src
+
+*** begin_src ,end_src & src block background theming
+I am assuming that leuven is the base theme activated for org mode
+
+Leuven by default provides a yellowish background to src blocks. I prefer github like light grey
+I have set src-block background to be 4% darker than the default background of the org buffer as per theme
+
+Leuven  =begin_src= and =end_src= are too eye popping for my taste
+I prefer to subdue the block starting line & hide the block ending line
+
+If you would like to temperorily unhide or un-subdue these, just use hl-line-mode or select that text to obtain a
+blue background. Or, you can edit and re-eval below block temperorily
+#+begin_src emacs-lisp :noweb-ref "org-faces/config/Define custom faces for org block"
+(require 'color)
+(let ((background-9%-darkened (color-darken-name (face-attribute 'default :background) 3))
+          (background-15%-darkened (color-darken-name (face-attribute 'default :background) 9))
+          (background-40%-darkened (color-darken-name (face-attribute 'default :background) 40)))
+      ;;^the color obtained by darkening the background by 9% is called background-9%-darkened
+      
+      (set-face-attribute 'org-block-begin-line nil
+                          :foreground background-40%-darkened
+                          :background background-9%-darkened
+                          :underline nil)
+      (set-face-attribute 'org-block-end-line nil
+                          :foreground background-15%-darkened
+                          :background background-9%-darkened
+                          :overline nil)
+      (set-face-attribute 'org-block nil
+                          :background background-9%-darkened))
+#+end_src
+*** COMMENT Replace begin_src python with =¶=
+TODO: Make this even prettier by installing nerdfonts
+Ⓟ means this block is not tangled
+Ⓕ means this block is tangled to a file
+#+begin_src emacs-lisp :tangle new2.el
+(setq-default prettify-symbols-alist '(("#+begin_src python :results output" . "¶")
+                                       ("#+begin_src python :noweb-ref" . "Ⓟ")
+                                       ("#+begin_src python :comments link" . "Ⓕ")
+                                       ;;(":tangle" . "→")
+				       ))
+#+end_src
+
+*** PROPERTIES green color is too bright, make it subdued
+I chose grey foreground & white background
+
+Place your cursor inside a :PROPERTIES: block and press C-u C-x =. This should give
+you info on why Emacs displays the char at point the way it does.
+Likely culprit is the face attribute of  =org-special-keyword=
+
+=org-drawer= is kinda like a superclass that includes everything around =org-speical-keyword= block
+So, I am setting its color code
+
+I have chosen its background to be white & its foreground to be 4% darker than canvas background
+#+begin_src emacs-lisp :noweb-ref "org-faces/config/Define custom faces for org PROPERTIES"
+(let ((background-15%-darkened (color-darken-name (face-attribute 'default :background) 15)))
+      (set-face-attribute 'org-special-keyword nil 
+                          :foreground background-15%-darkened 
+                          :background "#FFFFFF")
+      (set-face-attribute 'org-drawer nil 
+                          :foreground background-15%-darkened 
+                          :background "#FFFFFF")
+      (set-face-attribute 'org-property-value nil 
+                          :foreground background-15%-darkened 
+                          :background "#FFFFFF"))
+#+end_src
+*** Make cursor stand out a bit more
+By default it has a light blue color that doesnt pop out much
+Make it so that this applies to all future frames and becomes a default frame property
+#+begin_src emacs-lisp :tangle new2.el
+;;(add-to-list 'default-frame-alist '(cursor-color . "light coral"))
+;;(add-to-list 'default-frame-alist '(cursor-color . "yellow"))
+;;(add-to-list 'default-frame-alist '(cursor-color . "black"))
+(add-to-list 'default-frame-alist '(cursor-color . "red"))
+;;(set-cursor-color "black")
+#+end_src
+*** end_src grey out whole line
+But this looks kinda ugly when org headings are closed
+#+begin_src emacs-lisp :tangle new2.el
+(setq org-fontify-whole-block-delimiter-line t)
+#+end_src
+*** Color the entire width of the headling line   
+Theme the whole line when the heading is in open mode
+This makes the heading of any src block visually more explicit, when that heading is open
+#+begin_src emacs-lisp :tangle new2.el
+(setq org-fontify-whole-heading-line t)
+#+end_src
+** COMMENT org src block color bleeding bugfix
+*** CANCELLED COMMENT Solution =1= buggy, I have stolen this from stackoverflow
+Copy & pasted without understanding. Seems to work for me though.
+https://emacs.stackexchange.com/questions/52324/prevent-org-source-block-face-from-bleeding-out-in-fold
+#+begin_src emacs-lisp :tangle new2.el
+(defun org-fix-bleed-end-line-block (from to flag spec)
+  "Toggle fontification of last char of block end lines when cycling.
+       This avoids the bleeding of `org-block-end-line' when block is
+       folded."
+  (when (and (eq spec 'org-hide-block)
+             (/= (point-max) to))
+    (save-excursion
+      (if flag
+          (font-lock-unfontify-region to (1+ to))
+        (font-lock-flush to (1+ to))))))
+
+(advice-add 'org-flag-region :after #'org-fix-bleed-end-line-block)
+
+(defun org-fix-bleed-end-line-cycle (state)
+  "Toggle fontification of last char of block lines when cycling.
+       This avoids the bleeding of `org-block-end-line' when outline
+       is folded."
+  (save-excursion
+    (when org-fontify-whole-block-delimiter-line
+      (let ((case-fold-search t)
+            beg end)
+        (cond ((memq state '(overview contents all))
+               (setq beg (point-min)
+                     end (point-max)))
+              ((memq state '(children folded subtree))
+               (setq beg (point)
+                     end (org-end-of-subtree t t))))
+        (when beg           ; should always be true, but haven't tested enough
+          (goto-char beg)
+          (while (search-forward "#+end" end t)
+            (end-of-line)
+            (unless (= (point) (point-max))
+              (if (org-invisible-p (1- (point)))
+                  (font-lock-unfontify-region (point) (1+ (point)))
+                (font-lock-flush (point) (1+ (point)))))))))))
+
+(add-hook 'org-cycle-hook #'org-fix-bleed-end-line-cycle)
+#+end_src
+
+*** CANCELLED COMMENT Solution =2= also buggy, [[https://old.reddit.com/r/emacs/comments/cw0499/prevent_folded_headings_from_bleeding_out/][reddit ]]
+unfontify end_src whenever fold is called
+#+begin_src emacs-lisp :tangle new2.el
+(defun dwim-unfontify-last-line-of-subtree (&rest _)
+  "Unfontify last line of subtree if it's a source block."
+  (save-excursion
+    (org-end-of-subtree)
+    (beginning-of-line)
+    (when (looking-at-p (rx "#+end_src"))
+      (font-lock-unfontify-region
+       (line-end-position) (1+ (line-end-position))))))
+
+(advice-add #'outline-hide-subtree :after #'dwim-unfontify-last-line-of-subtree)
+#+end_src
+
+#+begin_src emacs-lisp :tangle new2.el
+(defun dwim-fontify-last-line-of-block (&rest _)
+  "Do what I mean: fontify last line of source block.
+     When the heading has a source block as the last item (in the subtree) do the
+       following:
+     If the source block is now visible, fontify the end its last line.
+     If it's still invisible, unfontify its last line."
+  (let (font-lock-fn point)
+    (save-excursion
+      (org-end-of-subtree)
+      (beginning-of-line)
+      (run-hooks 'outline-view-change-hook)
+      (when (looking-at-p (rx "#+end_src"))
+        (setq font-lock-fn
+              (if (invisible-p (line-end-position))
+                  #'font-lock-unfontify-region
+                #'font-lock-fontify-region))
+        (funcall font-lock-fn
+                 (line-end-position)
+                 (1+ (line-end-position)))))))
+
+(advice-add #'outline-show-heading :after #'dwim-fontify-last-line-of-block)
+#+end_src
+*** CANCELLED COMMENT Solution =3= my own attempt
+unfontify end_src whenever fold is called
+but hook as per solution =1=
+#+begin_src emacs-lisp :tangle new2.el
+(defun dwim-unfontify-last-line-of-subtree (&rest _)
+  "Unfontify last line of subtree if it's a source block."
+  (print "un-fontify  ZZZZZZZZZZZZZ")
+  (save-excursion
+    (org-end-of-subtree)
+    (beginning-of-line)
+    (when (looking-at-p (rx "#+end_src"))
+      (font-lock-unfontify-region
+       (line-end-position) (1+ (line-end-position))))))
+
+(advice-add #'outline-hide-subtree :after #'dwim-unfontify-last-line-of-subtree)
+#+end_src
+
+#+begin_src emacs-lisp :tangle new2.el
+(defun dwim-fontify-last-line-of-block (&rest _)
+  "Do what I mean: fontify last line of source block.
+     When the heading has a source block as the last item (in the subtree) do the
+       following:
+     If the source block is now visible, fontify the end its last line.
+     If it's still invisible, unfontify its last line."
+  (print "syntax highlight again ZZZZZZZZZZZZZZZZZZZ")
+  (let (font-lock-fn point)
+    (save-excursion
+      (org-end-of-subtree)
+      (beginning-of-line)
+      (run-hooks 'outline-view-change-hook)
+      (when (looking-at-p (rx "#+end_src"))
+        (setq font-lock-fn
+              (if (invisible-p (line-end-position))
+                  #'font-lock-unfontify-region
+                #'font-lock-fontify-region))
+        (funcall font-lock-fn
+                 (line-end-position)
+                 (1+ (line-end-position)))))))
+
+(advice-add #'outline-show-heading :after #'dwim-fontify-last-line-of-block)
+#+end_src
+*** CANCELLED COMMENT debug by printing state to messages
+#+begin_src emacs-lisp :tangle new2.el
+(defun temp_log_state0 (state)
+  ;;(print "Cycle State0 in hook:-")
+  (print state))
+(add-hook 'org-cycle-hook #'temp_log_state0)
+#+end_src
+
+*** COMMENT A simpler hacky solution
+Just set the bleed color to white.
+Have disabled it for now because it makes it difficult to notice the #+end_src line
+#+begin_src emacs-lisp :tangle new2.el
+(set-face-attribute 'org-block-end-line nil :background "#")
+#+end_src
+
+** CANCELLED org-tanglesync v/s org-babel-detangle
+syncs external tangled code back to org source
+Also see if it is any better than the builtin =(org-babel-detangle &optional SOURCE-CODE-FILE)=
+** COMMENT dont auto remove leading white spaces from codeblocks
+Preserve leading whitespace characters on export or entering =C-c '=
++I think this feature might help in ensuring that git diff doesnt contain changes unnecessary garbage+
++I think, this also might help with sexp split across multiple src blocks+
+#+begin_src emacs-lisp :tangle new2.el
+(setq org-src-preserve-indentation t)
+#+end_src
+** COMMENT +org internal linking using+
+#+begin_src emacs-lisp :tangle new2.el
+(use-package helm-org-ql
+  :quelpa (helm-org-ql :fetcher github :repo "alphapapa/org-ql"
+                       :files ("helm-org-ql.el")))
+
+#+end_src
+** COMMENT orgmode internal linking using kitchin's org-ref
+This package loads ox-pandoc as a dependency. ox-pandoc takes 5 seconds to load.
+Hence, have disabled this for now
+
+Need to write my own function that does insert-literate-target0
+#+begin_src emacs-lisp :tangle new2.el
+(use-package org-ref
+  :config
+  ;;(setq org-ref-insert-label-function 'org-ref-insert-label-link)  
+  (setq org-latex-prefer-user-labels t)
+
+  ;; below is recommended by this package
+  ;; but this leads to failure of Pygments
+  ;; so retain my previous settings for 'org-latex-pdf-process that uses xelatex
+  ;; (setq org-latex-pdf-process
+  ;;     '("pdflatex -interaction nonstopmode -output-directory %o %f"
+  ;;       "bibtex %b"
+  ;;       "pdflatex -interaction nonstopmode -output-directory %o %f"
+  ;;       "pdflatex -interaction nonstopmode -output-directory %o %f"))
+
+  ;; (setq org-latex-pdf-process (list "latexmk -shell-escape -bibtex -f -pdf %f"))
+  (defalias 'insert-literate-target0 'org-ref-insert-label-link))
+#+end_src
+
+** DONE Look into =:comments noweb= begin_src header argument
+It leaves a comment in the tangled file.
+Those comments can be used to jump back to the org file from the tangled file.
+There is an elisp function for such jumpback: ~org-babel-tangle-jump-to-org~
+
+But one major drawback of such comments is that they might end up accidentally commenting any text following a noweb target.
+Eg:-
+<<bla bla>>;
+The semicolon will be lost in the auto inserted comment:-
+#ends_here;
+
+Because of this drawback, I have decided to never use this header argument.
+** org export - dont turn underscore into subscript
+underscore & ^ should not be turned into subscript & superscript respectively
+However, when the term is inside flower brackets, do interpret it as subscript & superscript
+i.e. x^{y+z} should be interpreted as x superscript y+z inside the org export
+#+begin_src emacs-lisp :tangle new2.el
+(setq org-export-with-sub-superscripts '{})
+#+end_src
+** TODO COMMENT dont warn about duplicate label insertion
+when I call literate0 insert label, dont pop up warn buffer
+
+[[https://stackoverflow.com/questions/24779041/disable-warning-about-emacs-d-in-load-path]]
+#+begin_src emacs-lisp
+(defadvice display-warning
+    (around no-warn-.emacs.d-in-load-path (type message &rest unused) activate)
+  "Ignore the warning about the `.emacs.d' directory being in `load-path'."
+  (unless (and (eq type 'initialization)
+               (string-prefix-p "Your `load-path' seems to contain\nyour `.emacs.d' directory"
+                                message t))
+    ad-do-it))
+#+end_src
+
+**  =insert-literate-links0= link definitions <-> usages
+\<\<bla \>\> is defined at line-numbers  =5=, =8=
+<s :noweb-ref is used at is used at line-numbers =3= , =4=, =9=
+
+(noweb-ref-goto-definitions ...)  bound to M-.
+(noweb-ref-goto-usages ...) bound to M-,
+Howard Abrams likes to use =M-?= for usages. Because =M-,= is used to go back.
+
+(noweb-ref-goto ... call either of the above funcs intelligently based on cursor position)
+
+auto insert definitions & usages as org-ql links below each source block
+^this must be clickable even in exported pdfs
+
+*** Linking
+Jumping between src & org file: use =org-babel-tangle-jump-to-org=
+
+How to link to ~:noweb-ref~ and ~< <Some Target> >~ :-
+# All definitions
+# [[file:::/:noweb-ref Collect all functions$/]]
+
+# All targets
+# [[file:::/^<<Collect all functions>>/]]
+
+
+[[file:::3][This links to line number three in the same file]]
+**** org ref
+This code is used in section:- \[\[ref:Collect all functions\]\]
+TODO: figure out how to export the  above clickable org-ref link into Latex
+
+**** elisp 
+*** COMMENT parse first attempt
+#+begin_src emacs-lisp :tangle new2.el
+(org-link-search "/^<<Collect all functions>>/")
+
+(org-occur "/^<<Collect all functions>>/")
+
+;; with callback
+(org-occur "/^<<Collect all functions>>/"
+           nil
+           (lambda () (message (number-to-string (line-number-at-pos)))))
+
+(occur "/^<<Collect all functions>>/")
+
+(org-element-parse-buffer 'object)
+
+;; all headlines
+(org-element-map (org-element-parse-buffer) 'headline
+  (lambda (o) (plist-get (cadr o) :raw-value)))
+
+;; message prin1 src blocks
+(org-element-map (org-element-parse-buffer) 'src-block
+  (lambda (o)
+    (message (prin1-to-string o))))
+#+end_src
+
+*** helper
+#+begin_src emacs-lisp :tangle new2.el
+;;helper
+(defun pos-at-line-col0 (l c)
+  (save-excursion
+    (goto-char (point-min))
+    (forward-line (- l 1))
+    (move-to-column c)
+    (point)))
+;;(numberp (pos-at-line-col0 3 0))
+
+;;(pos-at-line-col0 3 0)
+#+end_src
+*** COMMENT example map
+#+begin_src emacs-lisp :tangle new2.el
+(org-element-map (org-element-parse-buffer) 'src-block
+  (lambda (o)
+    (let* ((value0 (format "%s" (plist-get (cadr o) :value)))
+           ;;(match0 (cl-search "\<\<Collect all functions\>\>" value0))
+           (match1 (string-match "^\<\<Collect all functions\>\>" value0)))
+      (if match1
+          ;;(print line-number-where-match-occurs)
+          ;;(print (numberp pos-where-src-body-begins))
+          (let* (
+                 (begin0 (plist-get (cadr o) :begin))
+                 ;;(end0 (plist-get (cadr o) :end))
+                 (begin_src-line-number (line-number-at-pos begin0))
+                 ;;(end_src-line-number (line-number-at-pos end0))
+                 (pos-where-src-body-begins (pos-at-line-col0 (+ begin_src-line-number 1) 0))
+                 (pos-where-match-occurs (+ pos-where-src-body-begins match1))
+                 (line-number-where-match-occurs (line-number-at-pos pos-where-match-occurs))
+                 )
+            ;;(print begin0);;correct
+            ;;(print begin_src-line-number);;correct
+            ;;(print pos-where-src-body-begins);;correct
+            ;;(print pos-where-match-occurs)
+            (print line-number-where-match-occurs)
+            ;;(print "-----------")
+            )))))
+#+end_src
+
+*** =find-matching-line-numbers=
+#+begin_src emacs-lisp :tangle new2.el
+(defun find-matching-line-numbers (regexp0)
+  ;;(interactive)
+  (org-element-map (org-element-parse-buffer) 'src-block
+    (lambda (o)
+      (let* ((value0 (format "%s" (plist-get (cadr o) :value)))
+             ;;(match0 (cl-search "\<\<Collect all functions\>\>" value0))
+             (match1 (string-match regexp0 value0)))
+        (if match1
+            ;;(print line-number-where-match-occurs)
+            ;;(print (numberp pos-where-src-body-begins))
+            (let* (
+                   (begin0 (plist-get (cadr o) :begin))
+                   ;;(end0 (plist-get (cadr o) :end))
+                   (begin_src-line-number (line-number-at-pos begin0))
+                   ;;(end_src-line-number (line-number-at-pos end0))
+                   (pos-where-src-body-begins (pos-at-line-col0 (+ begin_src-line-number 1) 0))
+                   (pos-where-match-occurs (+ pos-where-src-body-begins match1))
+                   (line-number-where-match-occurs (line-number-at-pos pos-where-match-occurs))
+                   )
+              ;;(print begin0)
+              ;;(print begin_src-line-number)
+              ;;(print pos-where-src-body-begins)
+              ;;(print pos-where-match-occurs)
+              ;;(print line-number-where-match-occurs)
+              (identity line-number-where-match-occurs) ;;add to the returned map
+              ))))))
+#+end_src
+^Usage:- (find-matching-line-numbers "^< <Collect all functions> >")
+
+*** =find-definitions= for all src blocks  -- "is defined at x,y,z"
+#+begin_src emacs-lisp :tangle new2.el
+(setq ref-name-regex
+      (rx ":noweb-ref "       ;begins with :noweb-ref
+          (group (one-or-more (not (any ":")))) ;match until next param " :"  ;;DOUBT:- will there be a bug if there are no further " :" params?
+          (zero-or-more ":" (one-or-more any)))) ;the rest of the parameters if any
+#+end_src
+Above regex breaks when the refname contains the character ~:~
+Because ~(match-string 1 parameters0)~ is relying on capturing groups
+Say, the culprit noweb refname is ~"some name that : contains double dot"~
+Then, the capturing group ~1~ will capture ~"some name"~
+Someday, I need to improve this regexp, to fix this mistake
+For now, I just need to be careful not to use ~":"~ character in my refnames.
+
+#+begin_src emacs-lisp :tangle new2.el
+(defun find-definitions ()
+  ;;(interactive)
+  ;;since all targets must have a definition, it suffices to just iterate over ref-names
+  ;;i.e. ref-names is always a superset of target-names
+  (find-all-ref-names-and-their-line-numbers))
+;;returns: (("Collect all functions" (16 23)) ("The Main" (36)))
+
+(defun find-ref-name-and-its-line-number (src-block0)
+  (let ((parameters0 (format "%s" (plist-get (cadr src-block0) :parameters)))
+        (begin0 (plist-get (cadr src-block0) :begin)))
+    (when (string-match ref-name-regex parameters0)
+      (let ((ref-name (s-trim-right (match-string 1 parameters0)))
+            (ref-line-number (line-number-at-pos begin0)))
+        (list ref-name ref-line-number)))))
+
+(defun find-all-ref-names-and-their-line-numbers ()
+  "Returns a list of all :noweb-ref ref-name0s in the current buffer, doesnt include duplicates"
+  ;;(interactive)
+  (let* ((parsed-buffer (org-element-parse-buffer))
+         (ref-names-with-line-number (org-element-map parsed-buffer 'src-block #'find-ref-name-and-its-line-number))
+         (ref-names-deduplicated (find-all-ref-names))) ;defined elsewhere
+    (mapcar (lambda (ref-name)
+              (let* ((locations-for-ref-name (mapcar (lambda (tuple)
+                                                       (if (string= (car tuple) ref-name)
+                                                           (cadr tuple)))
+                                                     ref-names-with-line-number)))
+                (list ref-name (delq nil locations-for-ref-name))))
+            ref-names-deduplicated)))
+#+end_src
+*** =find-usages= for all src blocks -- "is used at a,b,c"
+#+begin_src emacs-lisp :tangle new2.el
+;;note: this also includes unused definitions
+(defun find-usages ()
+  ;;(interactive)
+  (let* ((parsed-buffer (org-element-parse-buffer))
+
+        (definitions-that-are-actually-used-with-line-numbers
+         (delete-dups
+          (apply #'append
+                 (org-element-map parsed-buffer 'src-block
+                   'find-all-targets-and-their-line-numbers))))
+
+        (ref-names (find-all-ref-names))
+        (target-names (find-all-target-names))
+        (ref-names-unused (set-difference ref-names target-names :test #'string=))
+        (ref-names-unused-with-line-numbers (mapcar (lambda (ref-name) (list ref-name nil)) ref-names-unused)))
+    
+    (append definitions-that-are-actually-used-with-line-numbers
+            ref-names-unused-with-line-numbers)))
+#+end_src
+^This function may have a bug when it comes to finding unused definitions
+
+In the following block, ~pos~ holds a running reference to the current cursor position within ~value0~
+~value0~ holds stringified current ~src-block0~
+~target-name~ is of the form "«Some Target»", ie, inclusive of the arrows.
+#+begin_src emacs-lisp :tangle new2.el
+;; ;;note: this doensnt include unused definitions
+(defun find-all-targets-and-their-line-numbers (src-block0)
+  (let ((value0 (format "%s" (plist-get (cadr src-block0) :value)))
+        (pos 0)
+        ret)
+    (while (and (< pos (length value0)) (string-match org-target-regexp value0 pos))
+      (setq pos (match-end 0)) ;;I must store this before calling any other function that may modify match data, such as my next line invocation of ~match-string~
+      (let ((target-name (match-string 0 value0)))
+        (setq topush (list (substring target-name 2 -2) (find-matching-line-numbers target-name)))
+        (push topush ret)))
+    ret))
+#+end_src
+
+**** COMMENT find-all-targets-and-their-line-numbers alternative definition
+There was an infinite loop bug in above function, due to a mistake in the usage of ~(match-end~
+I needed to set /pos/ before calling /match-string/ that extracts target-name in previous block
+
++I found that function docs too confusing+
+
+So, I had resorted to just doing simple math of:-
+match_end0 = match position + length of query word
+
+Below works, but I have bug-fixed above block now, hence below is redundant
+#+begin_src emacs-lisp :tangle new2.el
+;;note: this doensnt include unused definitions
+(defun find-all-targets-and-their-line-numbers (src-block0)
+  (let* ((value0 (format "%s" (plist-get (cadr src-block0) :value)))
+         (pos 0)
+         (target-location0 (string-match org-target-regexp value0 pos))
+         ret)
+    (while (and (< pos (length value0)) target-location0)
+      (let ((target-name (match-string 0 value0)))
+        (setq topush (list (substring target-name 2 -2) (find-matching-line-numbers target-name)))
+        (push topush ret)
+        (setq pos (+ target-location0 (length target-name))) ;;target name already include the arrow '<<' and '>>'
+        (setq target-location0 (string-match org-target-regexp value0 pos))))
+    ret))
+#+end_src
+*** =delete-all-definitions= which deletes previous definitions
+#+begin_src emacs-lisp :tangle new2.el
+(defun find-target-names (src-block0)
+  "Returns a list of all the < <target-names> > in a given src-block0, includes duplicates"
+  (let ((value0 (format "%s" (plist-get (cadr src-block0) :value)))
+        (pos 0)
+        target-names)
+    (while (string-match org-target-regexp value0 pos) ;org-target-regexp is a builtin
+      (push (substring (match-string 0 value0) 2 -2) target-names)
+      (setq pos (match-end 0)))
+    (reverse target-names)))
+
+(defun find-all-target-names ()
+  "Returns a list of all < <target-names> > in the current buffer, doesnt include duplicates"
+  ;;(interactive)
+  (let* ((parsed-buffer (org-element-parse-buffer))
+         (target-names (delete-duplicates (reduce #'append (org-element-map parsed-buffer 'src-block #'find-target-names)) :test #'string=)))
+    target-names))
+
+(defun delete-all-definitions ()
+  ;;(interactive)
+  (mapcar #'delete-one-definition (find-all-target-names)))
+
+(defun delete-one-definition (target-name)
+  ;;(interactive)
+  ;;very dirty macro:- :( My first macro usage though :)
+  (let ((regexp0 (eval `(rx line-start "\/" ,@target-name "\/" " is defined at"))))
+    (beginning-of-buffer)               ;because delete lines works from point to end-of-file
+    (delete-matching-lines regexp0)))
+#+end_src
+
+*** =delete-all-usages= which deletes previous usages
+#+begin_src emacs-lisp :tangle new2.el
+(defun find-ref-name (src-block0)
+  "Returns the :noweb-ref ref-name0 for the given src-block0, if it exists"
+  (let ((parameters0 (format "%s" (plist-get (cadr src-block0) :parameters))))
+    (when (string-match ref-name-regex parameters0)
+      (s-trim-right (match-string 1 parameters0)))))
+
+(defun find-all-ref-names ()
+  "Returns a list of all :noweb-ref ref-name0s in the current buffer, doesnt include duplicates"
+  ;;(interactive)
+  (let* ((parsed-buffer (org-element-parse-buffer))
+         (ref-names (delete-duplicates (org-element-map parsed-buffer 'src-block #'find-ref-name) :test #'string=)))
+    ref-names))
+
+(defun delete-all-usages ()
+  ;;(interactive)
+  (mapcar #'delete-one-usage (find-all-ref-names)))
+
+(defun delete-one-usage (ref-name)
+  ;;(interactive)
+  ;;very dirty macro:- :( My first macro usage though :)
+  (let ((regexp0 (eval `(rx line-start "\/" ,@ref-name "\/" " is used at"))))
+    (beginning-of-buffer)               ;because delete lines works from point to end-of-file
+    (delete-matching-lines regexp0)))
+#+end_src
+*** =insert-blank-usages=
+#+begin_src emacs-lisp :tangle new2.el
+;;Assume that buffer contains no definitions currently
+;;TODO: LATER, SPECIAL CASE what happens when an src block contains both targets & also it itself defines something
+
+(defun find-number-of-refs-for-each (src-block0)
+  "Returns either 1 or 0"
+  (let ((parameters0 (format "%s" (plist-get (cadr src-block0) :parameters))))
+    (if (string-match ref-name-regex parameters0)
+        1
+      0)))
+
+(defun blank-usages-location-for-each (src-block0)
+  "Returns a list of line numbers where /Definitions/ need to be inserted for each src-block0
+Misnomer: better to call it source block ending line number"
+  (let* ((end0 (plist-get (cadr src-block0) :end))
+         (end_src-line-number (line-number-at-pos end0)))
+    (identity end_src-line-number)))
+
+(defun insert-blank-usages ()
+  "This enables us to not mess up line numbers when we run =find-definitions="
+  ;;(interactive)
+  (let* ((parsed-buffer (org-element-parse-buffer))
+         (number-of-refs (org-element-map parsed-buffer 'src-block #'find-number-of-refs-for-each))
+         (usage-insert-locations (org-element-map parsed-buffer 'src-block #'blank-usages-location-for-each))
+         (ref-names (org-element-map parsed-buffer 'src-block #'find-ref-name))
+         (adjusted-tuple (adjust-line-numbers2 number-of-refs usage-insert-locations)))
+    (insert-blank-usages-text adjusted-tuple ref-names)))
+
+;;helpers:
+;; same repeat function
+(defun running-sum (lst)
+  (cl-loop with sum = 0
+        for x in lst
+        collect (setf sum (+ sum x))))
+(running-sum '(1 2 3 4))
+
+(defun adjust-line-numbers2 (number-of-refs usage-insert-locations)
+  "Adjust because inserting lines alters the line numbers from the original cached parsed buffer.
+Returns a list of tuples of form (adjusted line number, number of blank definitions)"
+  (setq lines-to-skip (cons 0 (running-sum number-of-refs)))
+  (cl-mapcar (lambda (num line skip)
+               (list (+ line skip) num))
+             number-of-refs usage-insert-locations lines-to-skip))
+
+(defun insert-blank-usages-text (list-of-tuples ref-names)
+  "Tuple of form ((l1, n1), (l2, n2))
+At line l1, insert n1 definitions for target-name t1"
+  (mapcar (lambda (tuple)
+            (if (/= (cadr tuple) 0)
+              (insert-blanks-usages-text-helper (car tuple) (pop ref-names))))
+          list-of-tuples))
+
+(defun insert-blanks-usages-text-helper (line-number ref-name)
+  "At line-number, insert blank usage for given ref-name"
+  (goto-line line-number)
+  (insert (format "/%s/ is used at (BLANK PLACEHOLDER)\n" ref-name)))
+#+end_src
+
+*** =insert-blank-definitions=
+ASSUME that buffer already contains blank usages now
++NEED TO ACCOUNT FOR LINE NUMBER CHANGES DUE TO USAGES LINES+
+Just assume that definition will be written at end_src line & a newline added
+Therefore, implicitly the definition will push down on the already inserted usage
+
+#+begin_src emacs-lisp :tangle new2.el
+(defun find-number-of-targets-for-each (src-block0)
+  "Returns the number of < <targets> > for given src-block0 as a list"
+  (let ((value0 (format "%s" (plist-get (cadr src-block0) :value)))
+         (pos 0)
+         target-names)
+    (while (string-match org-target-regexp value0 pos)
+      (push (match-string 0 value0) target-names)
+      (setq pos (match-end 0)))
+    (length target-names)))
+
+(defun blank-definitions-location-for-each (src-block0)
+  "Returns a list of line numbers where /Definitions/ need to be inserted for each src-block0"
+  (let* (
+         ;;(N (find-number-of-targets-for-each src-block0))
+        (end0 (plist-get (cadr src-block0) :end))
+        (end_src-line-number (line-number-at-pos end0)))
+    (identity end_src-line-number)))
+
+;; (defun find-target-names-for-each (src-block0)
+;;   "Returns a list of all the < <target-names> > in a given src-block0, includes duplicates
+;; Return nil if no targets exist for the src-block0"
+;;   (let ((value0 (format "%s" (plist-get (cadr src-block0) :value)))
+;;         (pos 0)
+;;         target-names)
+;;     (while (string-match org-target-regexp value0 pos)
+;;       (push (substring (match-string 0 value0) 2 -2) target-names)
+;;       (setq pos (match-end 0)))
+;;     (if (/= (length target-names) 0)
+;;         (reverse target-names)
+;;       (list nil)                        ;(nil) return indicates no target-names found
+;;       )))
+
+;; (defun find-all-targets (src-block0)
+;;   (let ((value0 (format "%s" (plist-get (cadr src-block0) :value)))
+;;          (pos 0)
+;;          target-names)
+;;     (while (string-match org-target-regexp value0 pos)
+;;       (push (match-string 0 value0) target-names)
+;;       (setq pos (match-end 0)))
+;;     target-names))
+
+(defun insert-blank-definitions ()
+  "This enables us to not mess up line numbers when we run =find-definitions="
+  ;;(interactive)
+  (let* ((parsed-buffer (org-element-parse-buffer))
+         (number-of-targets (org-element-map parsed-buffer 'src-block #'find-number-of-targets-for-each))
+         (insert-locations (org-element-map parsed-buffer 'src-block #'blank-definitions-location-for-each))
+         (target-names (apply #'append (org-element-map parsed-buffer 'src-block #'find-target-names)))
+         (adjusted-tuple (adjust-line-numbers number-of-targets insert-locations))
+         )
+    (insert-blanks adjusted-tuple target-names)))
+
+;;helpers:
+(defun running-sum (lst)
+  (cl-loop with sum = 0
+        for x in lst
+        collect (setf sum (+ sum x))))
+(running-sum '(1 2 3 4))
+
+;; (defun get-lines-to-skip ()
+;;   "After each src-block, skip = number of definitions in it + number of usages in it.
+;; Lines to skip = a cumulative sum of the above"
+;;   (interactive)
+;;   (let* ((parsed-buffer (org-element-parse-buffer))
+;;          (number-of-refs (org-element-map parsed-buffer 'src-block #'find-number-of-refs-for-each))
+;;          (number-of-targets (org-element-map parsed-buffer 'src-block #'find-number-of-targets-for-each)) ;defined elsewhere
+;;          )
+;;     (running-sum
+;;      (cl-mapcar (lambda (r1 t1) (+ r1 t1))
+;;                 number-of-refs number-of-targets))))
+
+
+(defun adjust-line-numbers (number-of-targets insert-locations)
+  "Adjust because inserting lines alters the line numbers from the original cached parsed buffer.
+Returns a list of tuples of form (adjusted line number, number of blank definitions)"
+  ;;the very first definition needs to skip 0 lines due to interference from 0 previous-
+  ;;definition insertions
+  (setq lines-to-skip (cons 0 (running-sum number-of-targets)))
+  (cl-mapcar (lambda (num line skip)
+               (list (+ line skip) num))
+             number-of-targets insert-locations lines-to-skip))
+
+(defun insert-blanks (list-of-tuples target-names)
+  "Tuple of form ((l1, n1), (l2, n2))
+At line l1, insert n1 definitions for target-name t1"
+  (mapcar (lambda (tuple)
+            (dotimes (skip (cadr tuple))
+              (insert-blanks-helper (+ (car tuple) skip) (pop target-names))))
+          list-of-tuples))
+
+(defun insert-blanks-helper (line-number target-name)
+  "At line-number, insert blank definition for given target-name"
+  (goto-line line-number)
+  (insert (format "/%s/ is defined at (BLANK PLACEHOLDER)\n" target-name)))
+#+end_src
+
+*** =insert-definitions=
+Replace blank definitions with actual line numbered definitions
+#+begin_src emacs-lisp :tangle new2.el
+(defun insert-definitions ()
+  ;;(interactive)
+  (mapcar (lambda (tuple)
+            (let* ((ref-name (car tuple))
+                   (line-numbers (cadr tuple))
+                   (line-numbers-links (linkify-line-numbers line-numbers)))
+              (mark-whole-buffer)
+              (replace-regexp-in-entire-buffer
+               (eval `(rx line-start "\/" ,@ref-name "\/" " is defined at (BLANK PLACEHOLDER)\n"))
+               (format "/%s/ is defined at %s\n" ref-name line-numbers-links))))
+          (find-definitions)))
+
+(defun linkify-line-numbers (line-numbers)
+  (mapconcat #'identity
+             (mapcar (lambda (line-number)
+                       (format "[[file:::%s][%s]]" line-number line-number))
+                     line-numbers)
+             ", "))
+
+(defun replace-regexp-in-entire-buffer (regexp0 replacement0)
+  ;;(interactive)
+  (beginning-of-buffer)
+  (while (re-search-forward regexp0 nil t)
+    (replace-match replacement0)))
+#+end_src
+*** =insert-usages=
+Replace blank usages with actual line numbered usages
+#+begin_src emacs-lisp :tangle new2.el
+(defun insert-usages ()
+  ;;(interactive)
+  (mapcar (lambda (tuple)
+            (let* ((target-name (car tuple))
+                   (line-numbers (cadr tuple))
+                   (line-numbers-links (linkify-line-numbers line-numbers)))
+              (mark-whole-buffer)
+              (replace-regexp-in-entire-buffer
+               (eval `(rx line-start "\/" ,@target-name "\/" " is used at (BLANK PLACEHOLDER)\n"))
+               (format "/%s/ is used at %s\n" target-name line-numbers-links))))
+          (find-usages)))
+#+end_src
+*** insert usages and definitions
+#+begin_src emacs-lisp :tangle new2.el
+;; ORDER OF OPERATIONS IS IMPORTANT
+;; 1. delete previously inserted definitions, and usages
+;; 2. insert-blank-usages
+;; 3. insert-blank-definitons
+;; 4. insert-definitions: this regexp replaces blank definitions with real definitions
+;; 4. insert-usages: this regexp replaces blank usages with real usages
+
+(defun insert-usages-and-definitions ()
+  ;;(interactive)
+  (delete-all-definitions) (delete-all-usages) ;1
+  (insert-blank-usages)                        ;2
+  (insert-blank-definitions)                   ;3
+  (insert-definitions) (insert-usages)         ;4
+  )
+
+(defun insert-literate-links0 ()
+  (interactive)
+  (display-line-numbers-mode)
+  (insert-usages-and-definitions))
+#+end_src
+*** =M-.= should go to definitions/usage
+**** TLDR on usage
+=M-.= can be used whenever the cursor on any line with an org target. (any column)
+=M-.= can also be used whenever the cursor is on the begin_src line. (any column)
+=M-,= takes point to previous position
+**** CANCELLED COMMENT org-ctags
+There is a package named [[https://lists.gnu.org/archive/html/emacs-orgmode/2009-12/msg00670.html][Org-ctags]] that kinda does this  , but I found it to be confusing.
+If its readme is soo confusing and require patches to builtin org.el file, I dont have much faith in its author.
+Hence, writing my own config to do this.
+But, you can still look at that package's workflow as described in its readme, and steal some ideas.
+**** CANCELLED COMMENT TAGS
+Let me author a TAGS file manually for [[file:~/today/2023-11-08/nice.org][nice.org]] by referring to [[https://en.wikipedia.org/wiki/Ctags#Etags_2][Ctags - Wikipedia]]
+#+begin_quote Wikipedia format
+\x0c {src_file},{size_of_tag_definition_data_in_bytes}
+{tag_definition_text}\x7f{tagname}\x01{line_number},{byte_offset}
+#+end_quote
+
+#+begin_quote My generated TAGS
+
+nice.org,74
+<<Hello Function>>Hello Function13,268
+<<Hello Name>>Hello Name14,287
+#+end_quote
+
+Therefore,
+\x0c = ^L
+\x7f = ^?
+\x01 = ^A
+
+What is byte_offset?
+Its the number of bytes from the start of the file till where the function is defined.
+source: [[https://stackoverflow.com/questions/1990579/understanding-the-ctags-e-file-format-ctags-for-emacs][c - Understanding the `ctags -e` file format (ctags for emacs) - Stack Overflow]]
+
+I have started to hate this TAGS file format!
+
+Why not just use an elisp list.
+Wow! awesome idea
+
+**** CANCELLED COMMENT TAGS0.el
+Let me cache these into, say, ~./TAGS0.el~ file
+
+Let me initially consider the trivial case of:-
+one-definition   <--->    one-usage
+1-1 relationship
+#+begin_src emacs-lisp
+(setq anup/tags '((":noweb-ref \"Hello Function\"" 293)
+                  (":noweb-ref \"Hello Name\"" 312)
+                  ("\<\<Hello Function\>\>" 60)
+                  ("\<\<Hello Name\>\>" 160)))
+
+(assoc "\<\<Hello Function\>\>" anup/tags) ;;("\<\<Hello Function\>\>" 293)
+(cdr (assoc "\<\<Hello Function\>\>" anup/tags)) ;;(293)
+#+end_src
+
+The numbers correspond to the cursor position at which either the definition or usage occurs in the org file.
+Why not just use ripgrep with helm completion?
+Wow! even awesomer idea.
+**** Is point at locations that are interesting for =M-.=
+If point is at an interesting location, return that string. Return nil otherwise.
+
+Assumptions for following codeblock:-
+A line of text on my monitor is max 120 character
+My noweb-ref name doesnt take up more than one line of text
+My noweb target name doesnt take up more than one line of text
+noweb-ref names are always surrounded by quotes, eg: ⁚noweb-ref “My Example Definition”
+#+begin_src emacs-lisp :tangle new2.el
+(defun anup/current-column-helper (point)
+  (save-excursion
+    (goto-char point)
+    (current-column)))
+(defun anup/current-column ()
+  "Return column number at POINT."
+  (save-excursion
+    (goto-char (point))
+    (current-column)))
+(defun anup/length-of-current-line ()
+  "Return length of the line on which the POINT lies"
+  (- (line-end-position)
+     (line-beginning-position)))
+#+end_src
+
+I am making an assumption or rule of thumb that I always need to follow for this package to work properly.
+All noweb-ref names are inside quotation marks, always.
+Someday, modifiy my regexp and substring calls below, such that, even when quotation marks are optional, this elisp setup of mine works.
+
+My point will be looking at an usage of some literate block if:-
+between it and begin of line, there exists a string that matches ~org-target-regexp~
+In other words, it matches "«Some Target»"
+(Note: this regexp is defined by some inbuilt library. I am just reusing it)
+
+The following function could also have been named as /anup/looking-at-literate-target?/
+
+Its necessary to move cursor to end of line using elisp function ~end-of-line~
+Note that if you have visual-line-mode enabled, above function call *isnt* the same as keystroke ~C-e~
+~looking-back~ searches from the its first argument (ie, beginning of the current line) until current cursor position (ie, end of line)
+
+#+begin_src emacs-lisp :tangle new2.el
+(defun anup/looking-at-literate-usage? ()
+  "Return < <Some Target Name> > if cursor at some org target; Return nil otherwise"
+  (let ((original-cursor-position (point))
+        (closing-point0 (re-search-forward ">>" (line-end-position) t))
+        (beginning-point0 (re-search-backward "<<" (line-beginning-position) t)))
+    (goto-char original-cursor-position)
+    (if (and closing-point0
+             beginning-point0
+             (< original-cursor-position closing-point0)
+             (> original-cursor-position beginning-point0))
+        (buffer-substring-no-properties beginning-point0 closing-point0)
+      nil)))
+
+(defalias 'anup/looking-at-literate-target? 'anup/looking-at-literate-usage?)
+#+end_src
+
+My point will be looking at a definition if:-
+between it and begin of line, there exists a string that satisfies ~ref-name-regex~
+In other words, it matches ~"My Example Definition"~ in ~⁚noweb-ref "My Example Defintion" :tangle /tmp/out.py~
+Using elisp string concatenation, I build and return ~":noweb-ref \"My Example Definition\""~
+
+Below function is very similar to ~anoop/org-in-src-block-header?~ but it returns not just a predicate, but a string.
+#+begin_src emacs-lisp :tangle new2.el
+(defun anup/looking-at-literate-definition? ()
+  "Return ':noweb-ref My Example Definition' if cursor at some named org src block; Return nil otherwise"
+  ;;(interactive)
+  (let ((original-cursor-position (point)))
+    ;;move cursor to end of line was causing bugs when:-
+    ;;- either refname wasnt quoted
+    ;;- or src header contained more arguments after \:noweb-ref
+    ;;(end-of-line)
+    (end-of-line)
+    (if (looking-back ref-name-regex (- (point) (anup/current-column)))
+        (progn (goto-char original-cursor-position)
+               (concat ":noweb-ref " (s-trim-right (match-string-no-properties 1))))
+      (progn (goto-char original-cursor-position) nil))))
+#+end_src
+
+**** CANCELLED COMMENT Jump cursor to definition or usage
+For switching cursor position, ~helm-goto-line~ is better than ~goto-line~, because, it will reveal any hidden org headings if needed.
+#+begin_src emacs-lisp :tangle new2.el
+  ;; (defun anup/goto-definition ()
+  ;;   (interactive)
+  ;;   "Move point to the location where this literate named block is being utilized"
+  ;;   (if-let* ((target-name (anup/looking-at-literate-usage?))
+  ;; 	    (definition-name (concat ":noweb-ref \"" (substring target-name 2 -2) "\""))
+  ;; 	    )
+  ;;       (helm-goto-line (car (cdr (assoc definition-name anup/tags))))))
+
+  ;; (defun anup/goto-usage ()
+  ;;   (interactive)
+  ;;   "Move point to the location where this literate named block is defined"
+  ;;   (if-let* ((definition-name (anup/looking-at-literate-definition?))
+  ;; 	    (target-name (concat "\<\<" (substring definition-name 13 -2) "\>\>")))
+  ;;       (helm-goto-line (car (cdr (assoc target-name anup/tags))))))
+
+
+  ;; (defun anup/goto-definition ()
+  ;;   (interactive)
+  ;;   nil)
+
+  ;; (defun anup/goto-usage ()
+  ;;   (interactive)
+  ;;   nil)
+#+end_src
+
+Helpful temp keybindings while developing this code
+#+begin_src emacs-lisp
+;;(bind-keys* :map org-mode-map
+;;            ("M-." . anup/goto-definition)
+;;            ("M-," . anup/goto-usage))
+#+end_src
+**** CANCELLED COMMENT Generation 1-1 relationshiped TAGS0.el file
+Actually, the many-many relationshiped TAGS0.le file will work even for the singular case of:-
+~anup/goto-usage~ & ~anup/goto-definition~
+**** CANCELLED COMMENT Generating a many-many relationshiped TAGS0.el assoc list
+***** COMMENT =find-definitions2= finds all definitions of all "«Some Target»"
+This is a modified version of [[*=find-definitions= for all src blocks -- "is defined at x,y,z"][=find-definitions= for all src blocks -- "is defined at x,y,z"]]
+The following function ONLY changes the format of the output of the previously defined ~find-definitions~
+
+Its modified to output result in a  assoc list format that I like for /TAGS0.el/
+#+begin_src emacs-lisp :tangle new2.el
+(defun find-definitions2 ()
+  ;;since all targets must have a definition, it suffices to just iterate over ref-names
+  ;;i.e. ref-names is always a superset of target-names
+  (let (ret)
+    (dolist (elt (find-definitions) ret)
+      (setq ret (cons
+                 (cons 
+                  (concat ":noweb-ref " (car elt))
+                  (cadr elt))
+                 ret)))))
+;;returns: (("Collect all functions" 16 23) ("The Main" 36))
+#+end_src
+***** COMMENT =find-usages2= finds all usages of all :noweb-ref
+This is a modified version of [[*=find-usages= for all src blocks -- "is used at a,b,c"][=find-usages= for all src blocks -- "is used at a,b,c"]]
+The following function ONLY changes the format of the output of the previously defined ~find-usages~
+
+Its modified to output result in a  assoc list format that I like for /TAGS0.el/
+#+begin_src emacs-lisp :tangle new2.el
+;;note: this also includes unused definitions
+(defun find-usages2 ()
+  (let (ret)
+    (dolist (elt (find-usages) ret)
+      (if (cadr elt) ;;to filter out nil, this is a temp bugfix, will remove it when I bugfix find-usages
+          (setq ret (cons
+                     (cons (concat "\<\<" (car elt) "\>\>") (cadr elt))
+                     ret))))));;returns: (("\<\<Collect all functions\>\>" 25 70) ("\<\<The Main\>\>" 49))
+#+end_src
+***** CANCELLED define anup/tags
+#+begin_src emacs-lisp :tangle new2.el
+;;(setq anup/tags (append (find-definitions2) (find-usages2)))
+(defun anup/tags2 ()
+  (interactive)
+  (append (find-definitions2) (find-usages2)))
+#+end_src
+
+**** CANCELLED COMMENT Handling many-many relationships during M-. and M-,
+**** making use of +ripgrep+ ag-the-silver-searcher to jump around
+***** why helm-ag.el is the best library for my usecase?
+Why not just ripgrep the buffer for string of the form "< <Some Target> >" and "⁚noweb-ref \"Some Target\""
+
+#+begin_src emacs-lisp
+(rg-define-search search-for-hello-function-definition
+    "Search current buffer for noweb-ref Hello Function"
+    :query " :noweb-ref \"Hello Function\""
+    :flags ("--no-ignore")
+    :format literal
+    :files (buffer-name)
+    :dir current)
+#+end_src
+Above works, but I dont like the UI of rg.el
+Let me try some helm-ified ripgrep elisp package
+One major drawback of this method is that it doesnt work in /indirect narrowed headings buffers/
+
+counsel-rg is buggy for me
+#+begin_src emacs-lisp
+(counsel-rg ":noweb-ref \"exwm-binds\"") ;;fails due to cryptic error code 2
+#+end_src
+
+So, trying out  /counsel-ag/ which happens to be bundled with /counsel/.
+#+begin_src emacs-lisp
+;;(counsel-ag ":noweb-ref" "/home/anoop/today/2023-11-08/" "--context 2");;fails if you give --context
+;;(counsel-ag ":noweb-ref" "/home/anoop/today/2023-11-08/" "-C 2");;fails if you give --context
+#+end_src
+Ruling it out because I didnt find an easy method to run counsel-ag on /just current file/
+Although the full form syntax '--context' fails, the short form '-C' strangely succeeds.
+
+#+begin_src emacs-lisp
+;;(helm-ag-this-file " :noweb-ref \"Hello Function\"") ;;works
+#+end_src
+
+However, /helm-ag/ doesnt support passing "--context 3" to the ag binary.
+Context represents the number of lines to show in results around a match.
+
+Let me postpone the implementation of showing context around a match to a future date.
+In that case, helm-ag fits my needs
+
++I faced problems with helm-ag-this-file when the query contained double quotes.+
+As long as I escape the double quote, I felt it works fine.
+---------------------------------------------------------------------------------------------------
++Hence, switching to counsel-ag.+
+#+begin_src emacs-lisp
+(counsel-ag ":noweb-ref \"exwm-binds\"" nil "-C 3 --norecurse --noheading --case-sensitive --file-search-regex temp.org$" "Find definitions for:-")
+#+end_src	      
+^See if you can figure out how to hide column numbers in results.
+
+I couldnt get ~counsel-ag~ to respect OR clauses ie ~|~ properly
+---------------------------------------------------------------------------------------------------
+After switching away from counsel to consult, I would prefer to not use any counsel functions.
+Hence, switching to ~consult-ripgrep~
+#+begin_src emacs-lisp
+(consult-ripgrep "/home/anup/today/2024-11-12" ":noweb-ref \"hello\\ world\" -- --context 3 --case-sensitive test.org")
+#+end_src
+I noticed that since consult updates the cursor position, and gives a live preview in the main window, I dont need context.
+#+begin_src emacs-lisp
+(consult-ripgrep "/home/anup/today/2024-11-12" ":noweb-ref \"hello\\ world\" -- --case-sensitive test.org")
+#+end_src
+Above is not searching just the =test.org= file. It is running on all files in directory. Lets fix it.
+#+begin_src emacs-lisp
+(let ((consult-project-function (lambda (_x) nil)))
+  (consult-ripgrep (list "/home/anup/today/2024-11-12/test.org") ":noweb-ref \"hello\\ world\" -- --case-sensitive"))
+#+end_src
+---------------------------------------------------------------------------------------------------
+Let me take a second look at helm-ag.
+Even if it doenst support /context/, but if it support ~|~, then I might prefer it over ~counsel-ag~
+
+I can confirm that it does support the ~|~ clause
+#+begin_src emacs-lisp
+(helm-ag-this-file ":noweb-ref \"Hello Function\"|:noweb-ref Hello Function") ;works
+#+end_src
+
+Unfortunately, this doesnt work when the query is too long, such as:-
+#+begin_src emacs-lisp
+(helm-ag-this-file ":noweb-ref \"Ponomial Package/=zero?\"|:noweb-ref Ponomial Package/=zero?|:noweb-ref \"Ponomial Package/=zero\?\"")
+#+end_src
+^Errors out:-
+#+begin_example
+helm-M-x-execute-command: No ag output: ’:noweb-ref "Ponomial Package/=zero?"|:noweb-ref Ponomial Package/=zero?|:noweb-ref "Ponomial Package/=zero\?"’
+#+end_example
+---------------------------------------------------------------------------------------------------
+Someday maybe, check org-ql package to query the current orgfile.
+---------------------------------------------------------------------------------------------------
+*Explorations:-*
+How about ~helm-rg~
+Does using helm-rg--expand-match-context and/or helm-rg--spread-match-context help?
+
+Currently, counsel-ag is the only one able to show me context around a match.
+But, context isnt as important as ~|~
+
+#+begin_src emacs-lisp
+(defun temp ()
+  (interactive)
+  (let* ((anup/file-name (file-name-nondirectory buffer-file-name))
+         (helm-rg-default-glob-string anup/file-name)
+         (helm-rg-prepend-file-name-line-at-top-of-matches nil)
+         (helm-rg-default-extra-args "--case-sensitive") ;;works
+         ;;(helm-rg-default-extra-args "--context 1") ;;doesnt work
+         ;;(helm-rg-default-extra-args "--context 5 --case-sensitive");; doesnt work
+         )
+    (helm-rg ":noweb-ref \"Hello Function\"")
+    ))
+#+end_src
+
+Although helm-rg doesnt support context around match, it supports OR clauses properly, unlike ~counsel-ag~
++The day I figure out how to show ~--before-context 3 --after-context 3~ , I will adopt this over counsel-ag.+
+Will switch to helm-rg after I figure out how to make ~helm-rg~ search JUST the current file and not the entire current folder
+#+begin_src emacs-lisp
+(helm-rg ":noweb-ref \"Hello Function\"|:noweb-ref Hello Function" nil "current-file-name")
+#+end_src
+^doesnt work
+
+Someday, try =consult-ripgrep= and see if it is better than =counsel-ag=
+
+***** anup/goto-definition and anup/goto-usage
+Goes to the literate definition and the literate usage respectively.
+
+A helper function
+#+begin_src emacs-lisp :tangle new2.el
+(defun anup/replace-in-string (what with in)
+  (replace-regexp-in-string (regexp-quote what) with in nil 'literal))
+#+end_src
+
+#+begin_src emacs-lisp :tangle new2.el
+(defun anup/goto-definition ()
+  (interactive)
+  "Move point to the location where this literate named block is being utilized"
+  (if-let* ((target-name (anup/looking-at-literate-usage?))
+            ;;trim angle brackets
+            (_ref-name (substring target-name 2 -2))
+            ;;spaces inside double quotes arent matched properly unless they are escaped
+            (_ref-name (string-replace " " "\\ " _ref-name))
+            ;;llly question mark also needs escaping
+            (_ref-name (string-replace "?" "\\?" _ref-name))
+            (definition-name (concat ":noweb-ref \"" _ref-name "\""))
+
+            ;;;;;;disabled because it is OR is not working in counsel-ag
+            ;;;;;;because sometimes noweb-ref names are written without double quotes in orgfiles
+            ;;;;(definition-name-remove-double-quotes (anup/replace-in-string "\"" "" definition-name))
+            ;;;;
+            ;;;;;;because sometimes refnames may contain question marks
+            ;;;;(definition-name-escape-question-mark (anup/replace-in-string "?" "\\?" definition-name))
+            ;;;;
+            ;;;;;;combine all the above cases into a query that can be sent into grep
+            ;;;;(query (concat definition-name "|"
+            ;;;;               definition-name-remove-double-quotes "|"
+            ;;;;               definition-name-escape-question-mark))
+            
+            (file-name (file-name-nondirectory buffer-file-name))
+            (directory-name (file-name-directory buffer-file-name)))
+      ;;(helm-ag-this-file query)
+      ;;(counsel-ag definition-name nil (format "-C 3 --norecurse --noheading --case-sensitive --file-search-regex %s$" file-name) "")
+
+      ;; --no-heading isnt working
+      ;;(consult-ripgrep (list (shell-quote-argument buffer-file-name))
+      ;;                 (format "%s -- --case-sensitive --no-heading" definition-name))
+      
+      ;;The first argument limits the search to just the current file
+      (consult-ripgrep (list (shell-quote-argument buffer-file-name)) (format "%s -- --case-sensitive" definition-name))))
+#+end_src
+I dont know how to send counsel-rg a query that asks it match either of two queries.
+TODO That would be helpful for my usecase of treating quoted and unquoted noweb refnames as both valid.
+
+^Bug: Why does ~counsel-ag~ fail to match whenever the definition name contains a ~,~ in its noweb refname.
+This bug isnt due to my code. Its a bug within the library ~counsel-ag~.
+Current workaround: Dont use comma ie ~,~ inside refnames. Just use fullstop ie ~.~ instead.
+
+Be careful of any string containing arrows. org-babel will interpret them as noweb-ref targets.
+Therefore, you should either escape them with backslashes, -
+-or, add an ~:noweb-ref no~ header to such src blocks. [[*A snippet to insert SICP source blocks in org-mode][Eg]].
+#+begin_src emacs-lisp :tangle new2.el
+(defun anup/goto-usage ()
+  (interactive)
+  "Move point to the location where this literate named block is defined"
+  (if-let* ((definition-name (anup/looking-at-literate-definition?))
+            <<Extract target-name>>)
+
+      ;;decided against helm-ag
+      ;;(helm-ag-this-file target-name)
+
+      ;;bug:- --nofilename isnt working
+      ;;(counsel-ag target-name nil (format "-C 3 --norecurse --noheading --case-sensitive --file-search-regex %s$" file-name) "")
+
+      ;; --no-line-number isnt working in the format string due to some bug
+      (consult-ripgrep (list (shell-quote-argument buffer-file-name)) (format "%s -- --case-sensitive" target-name))))
+#+end_src
+
+Let us remove doublequotes (if present) from definition name. This makes this function handle both the cases of un-doublequoted or doublequoted ref naming gracefully.
+#+begin_src emacs-lisp :noweb-ref "Extract target-name"
+(_ref-name (substring definition-name 11))
+;;strip double quotes
+(_ref-name (anup/replace-in-string "\""
+                                   ""
+                                   _ref-name))
+;;escape spaces
+(_ref-name (string-replace " " "\\ " _ref-name))
+;;escape question mark
+(_ref-name (string-replace "?" "\\?" _ref-name))
+(target-name (concat "\<\<" _ref-name "\>\>"))
+#+end_src
+
+****** COMMENT keybind them
+^deprecated in favor of routed version at [[*Intelligently route /go to definition/ according to where it is called from][Intelligently route /go to definition/ according to where it is called from]]
+
+Bind them in the org's use-package declaration's ~:bind*~
+#+begin_src emacs-lisp :noweb-ref "From/Literate Programming. To/org/org-mode-map/bind_star"
+("M-." . anup/goto-definition)
+("M-," . anup/goto-usage)
+#+end_src
+
+**** bugs
+If refname contains ~?~, then it isnt treated literally. It is treated as some sort of regexp specification.
+Maybe adding ~--literal~ to ~ag~ options helps? Ans: No, it doesnt work for some reason.
+*** COMMENT someday
+delete all previous "Usages at bla bla"  before updating
+automatically insert "This code is used at line numbers x, y, z" & "See definitions at line numbers a, b, c"
+"See definitions at line numbers a, b, c" needs de-duplication if used multiple times in the same block
+
+cache (org-element-parse-buffer) as its a slow function
+
+**** COMMENT +org-ql  :  a package to query org buffers with elisp+
+use org-ql to simplify my code
+#+begin_src emacs-lisp :tangle new2.el
+(use-package org-ql)
+(use-package helm-org-ql)
+#+end_src
+Problem: this seems to navigate to the org headings only :(
+
+** CANCELLED Look into how to import a disk file into org buffer using #+INCLUDE
+But, now the external file will be treated as the single source of truth, instead of the orgfile exporting to the external file
+This is kinda reverse of the strategy of treating org buffer as the single source of truth that git check-in-ed and then tangled to external files.
+Therefore, this workflow may not suit my needs. I want to retain the ability to git checkin the orgmode buffer as the source of truth.
+^Look into alternative sister elisp functions similar to #+INCLUDE
+** TODO automatic index generation
+At the end of the book, an index of each of the variables_names & functions; pointing to the page numbers where they are used.
+Generate such an hyperlinked index automatically.
+** study howard abrahm's tower of babel
+https://github.com/howardabrams/dot-files/tree/master/babel
+** TODO mouseover or hover should show /definitions/ and /usages/ links
+https://emacs.stackexchange.com/questions/54319/how-to-display-target-of-an-org-mode-link-in-the-echo-area-or-as-tooltip
+Go to defintion M-. links should be shown on mouseover
+It may be too noisy to turn on on_cursor_over, I think a happy middle ground is to only enable mouseover
+Embark might be useful to implement this.
+** TODO quokka.js for emacs?
+A similar implementation for Clojurescript is available.
+** COMMENT ricing orgmode to look like a book
+[[https://lepisma.xyz/2017/10/28/ricing-org-mode/index.html][Ricing up Org Mode]]
+also see Rougier's book-mode & nano-theme. Also learn to export orgfiles using Rougier's CSS by studying [[https://github.com/rougier/emacs-gtd][rougier/emacs-gtd: Get Things Done with Emacs - github.com/rougier/emacs-gtd]]
+
+Orgmode add ability to pick color of text using inline tag. Eg:- <red>Anoop</red> should render my name in red text.
+
+Look into turing on =pixel-scroll-precision-mode= globally, after upgrading to faster desktop
+
+Make it easy to insert images from phone into orgmode.
+- First figure out how to access my computer from the internet using /tailscale/
+- Now create an android app that launches a camera
+- As soon as you click the shutter, the image should appear on my computer
+       OR
+- Learn to use my android as the webcam of my PC
+- Now org insert image, should optinally trigger an option to launch/ready my android camera for doc scanning.
+** raise errors if noweb-refs dont resolve, for all languages
+#+begin_src emacs-lisp :noweb-ref "org/config"
+(setq org-babel-noweb-error-all-langs t)
+#+end_src
+** CANCELLED I need a way to redefine existing noweb-refs
+^But first study TexBook to see if Donald Knuth redefines existing named blocks or not. I would wager that he doesn't. Therefore, this TODO is deprecated.
+Doubt: In Knuth's web, does ~≣~ re-define existing definition if used multiple times?
+
+I have found by experimentation that ~:noweb-ref~ adds to existing.
+
+| Knuth's syntax | noweb ref syntax |
+|----------------+------------------|
+| ≣              | #+name:          |
+| +≣             | :noweb-ref       |
+|----------------+------------------|
+
+ie, I can use the following convention:-
+Use ~#+name: <some_name>~ to define blocks to which you are never gonna make any more additions.
+Use ~:noweb-ref~ to define blocks to which you *will* make future additions.
+
+~#+name:~ refers to a singular src block, whereas noweb-ref refers to a collection of one or more src blocks as per [[info:org#Noweb Reference Syntax][org#Noweb Reference Syntax]]
+
+** WAITING COMMENT [[https://emacs.stackexchange.com/questions/28491/insert-noweb-references-with-completion][org mode - Insert noweb references with completion - Emacs Stack Exchange]]
+The stackoverflow answer seemed not targetted to company or ivy.
+Found another answer targetting company-mode. Hence prefer the latter.
+Stolen from [[https://lists.gnu.org/archive/html/emacs-orgmode/2018-11/msg00090.html][[O] company-mode completions for noweb references]]
+#+begin_src emacs-lisp :tangle new2.el
+(defun anoop/org-src-block-name-backend (command &optional arg &rest ignored)
+  "Complete `<<' with the names of defined SRC blocks."
+  (interactive (list 'interactive))
+  (cl-case command
+    (interactive (company-begin-backend 'anoop/org-src-block-name-backend))
+    (init (require 'org-element))
+    (prefix (and (eq major-mode 'org-mode)
+                 (eq 'src-block (car (org-element-at-point)))
+                 (cons (company-grab-line "^<<\\(\\w*\\)" 1) t)))
+    (candidates
+     (org-element-map (org-element-parse-buffer) 'src-block
+       (lambda (src-block)
+         (let ((name (org-element-property :name src-block)))
+           (when name
+             (propertize
+              name
+              :value (org-element-property :value src-block)
+              :annotation (org-element-property :raw-value (org-element-lineage src-block '(headline)))))))))
+    (sorted t)            ; Show candidates in same order as doc
+    (ignore-case t)
+    (duplicates nil)               ; No need to remove duplicates
+    (post-completion               ; Close the reference with ">>"
+     (insert ">>"))
+    ;; Show the contents of the block in a doc-buffer. If you have
+    ;; company-quickhelp-mode enabled it will show in a popup
+    (doc-buffer (company-doc-buffer (get-text-property 0 :value arg)))
+    (annotation (format " [%s]" (get-text-property 0 :annotation arg)))))
+
+(add-to-list 'company-backends 'anoop/org-src-block-name-backend)
+#+end_src
+
+I didnt get a chance to check whether above works or not.
+Because, company-mode isnt autocompleting when major mode is org-mode. I need to fix that first. Hence, commented out.
+** prevent orgmode from repeating the prefix text before noweb-targets
+You can use the src block header ~:noweb-prefix no~ if you want prevent orgmode from repeating the text to the left of a target into each line of tangled target.
+
+ie,
+Previously, whenever a noweb reference appeared on a non-empty line, a multi-line replacement would duplicate the content before the noweb reference.
+
+Clearly, this is almost always not desirable, and this behaviour can now be turned of by setting the new header argument :noweb-prefix no.
+
+I have globally disabled the noweb-prefix by default in my emacs configuration.
+To enable it for a particular block, I need to add the header argument ~:noweb-prefix "yes"~ or ~:noweb-prefix yes~
+** study this famous noweb =wc= program
+[[https://www.cs.tufts.edu/~nr/noweb/examples/wc.html][An Example of noweb by Norman Ramsay]]
+** COMMENT Set the visibility state for an individual source block
+^disabled because on migrating from emacs-29 to emacs-30-igc, I started getting a bug while opening job.org file.
+
+source: [[https://emacs.stackexchange.com/questions/44914/choose-individual-startup-visibility-of-org-modes-source-blocks][org babel - Choose individual startup visibility of org-mode's source blocks - Emacs Stack Exchange]]
+#+begin_src emacs-lisp :tangle new2.el :hidden
+(defun individual-visibility-source-blocks ()
+  "Fold some blocks in the current buffer."
+  (interactive)
+  (org-show-block-all)
+  (org-block-map
+   (lambda ()
+     (let ((case-fold-search t))
+       (when (and
+              (save-excursion
+                (beginning-of-line 1)
+                (looking-at org-block-regexp))
+              (cl-assoc
+               ':hidden
+               (cl-third
+                (org-babel-get-src-block-info))))
+         (org-hide-block-toggle))))))
+
+(add-hook
+ 'org-mode-hook
+ (function individual-visibility-source-blocks))
+#+end_src
+Henceforth, adding a ~:hidden~ to some src header makes those source blocks hidden on initial file open.
+
+Now I can neatly lay out my orgfile such that only those src blocks that need to be read to understand the file are visibile.
+For most blocks, the prose above those blocks should suffice.
+ie, try to write prose such that you are able to hide most src blocks.
+I will encourage myself to achieve this by adding ~:hidden~ to all my src block insertion templates.
+
+BTW, entire org headings can be hidden by adding the following property:-
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
+Note that properties are respected /only if/ they are added immediately following the heading line.
+** TODO Read [[http://eschulte.github.io/org-scraps/][awesome orgmode examples]]
+** COMMENT Enable macros during tangle
+no longer works source:- http://eschulte.github.io/org-scraps/
+Newer solution source [[https://list.orgmode.org/CAGY83EfBuCJ+3-ZsmefsYsbhG=QBW3b9cfkx_sHCJDLj-C360g@mail.gmail.com/T/][How to expand macros in tangled code blocks?]]
+
+This solution makes use of file local variable feature of emacs.
+I need to add the following snippet into any orgfile in which I want macro expansion to happen /even/ in src blocks.
+
+I need to add a “local variables list” /near the end/ of the file.  The start of
+the local variables list should be no more than 3000 characters from the
+end of the file, and must be on the last page if the file is divided
+into pages.
+
+#+begin_quote Add
+# Local Variables:
+# eval: (add-hook 'org-babel-pre-tangle-hook (lambda () (setq zz/saved-macro-templates org-macro-templates)) :append :local)
+# eval: (add-hook 'org-babel-post-tangle-hook (lambda () (makunbound 'zz/saved-macro-templates)) :append :local)
+# eval: (add-hook 'org-babel-tangle-body-hook (lambda () (when (boundp 'zz/saved-macro-templates) (org-macro-replace-all zz/saved-macro-templates))) :append)
+# End:
+#+end_quote
+
+*** Usage:-
+#+MACRO: myincr $1=$1+1
+#+MACRO: mymultiply $1*$2
+#+begin_src python :tangle /tmp/temp.py
+x = 3.14
+{{{myincr(x)}}}
+z = {{{mymultiply(x,y)}}} #z = x*y gets inserted
+print(x) #4.14 gets printed
+#+end_src
+
+*** TODO Try to make above work even for =C-c C-c=, not just tangled output
+** Find out how [[https://github.com/mmp/pbrt-v4][mmp/pbrt-v4: Source code to pbrt, the ray tracer described in the forthcoming 4th edition of the "Physically Based Rendering: From Theory to Implementation" book.]] handles collaborators & pull requests on a literate project
+** I like making multiple indirect buffers
++^I have disabled this desirable feature because of a bug in it.+
+
+By default ~org-tree-to-indirect-buffer~ will close the previous indirect buffer when opening a new one.
+But, if called with a prefix argument, it will make a new indirect buffer WITHOUT closing previous ones.
+Retaining those previous ones is desirable for my usecase, as I could be working/editing them for some other project.
+
+#+begin_src emacs-lisp :tangle new2.el
+(defun org-tree-to-indirect-buffer2 ()
+  "Like org-tree-to-indirect-buffer, but always creates a new indirect buffer, wont close previous ones."
+  (interactive)
+  (let ((current-prefix-arg '(4)))
+    (call-interactively 'org-tree-to-indirect-buffer)))
+
+(setq org-indirect-buffer-display 'current-window)
+
+(put 'org-tree-to-indirect-buffer 'disabled "Use org-tree-to-indirect-buffer2 instead0")
+;;below was by default bound to the above disabled command, let me rebind it to improved version
+(keymap-set org-mode-map "<remap> <org-tree-to-indirect-buffer>" 'org-tree-to-indirect-buffer2)
+#+end_src
+
+*** TODO intermittent bug
+#+begin_quote intermittent bug
+Sometimes, not all sub headings of the currently focused heading are
+detected properly. Multiple times, the tail was cutoff somewhere. ie,
+Several headings after a certain number of headings cease to be
+detected to be moved into the new indirect buffer.
+
+Hence, for now, dont enable this feature, until finding a cure to this problem.
+Strangely, this bug disappers inside tty emacs, with my full .emacs config loaded.
+So, whats causing this bug in orgmode when running on EXWM?
+#+end_quote
+
+#+begin_quote stacktrace of bug
+⛔ Warning (org-element-cache): org-element--cache: Org parser error in job.org::WAITING =desivanlife.com= Vanlife Tempo Traveller::4646612. Resetting.
+ The error was: (error "Invalid search bound (wrong side of point)")
+ Backtrace:
+"  backtrace-to-string(nil)
+  org-element-at-point()
+  org-element-context()
+  org-appear--current-elem()
+  org-appear--post-cmd()
+"
+ Please report this to Org mode mailing list (M-x org-submit-bug-report).
+#+end_quote
+
+If the tail is prematurely getting truncated, then, the bug is related to:-
+[[file:/usr/local/share/emacs/29.1.90/lisp/org/org.el.gz::org-end-of-subtree t t][ensure that ~(org-end-of-subtree t t)~ command does go to the end of the heading to be narrowed + 1 character forward]]
+
+** COMMENT Go to definition using Tags file
+^disabled because its annoying to maintain an updated TAGS file. Hence, switched to dumb-jump
+
+Set the keybindings
+#+begin_src emacs-lisp :tangle new2.el
+(bind-keys :map org-mode-map
+           ("C-c M-." . xref-find-definitions)
+           ("C-c M-," . xref-go-back))
+#+end_src
+
+ctags is old. Emacs bundles this along.
+exuberent-ctags is an improvement of old ctags. But its currently abandoned.
+universal-ctags is a maintained fork of exuberant-ctags.
+So, =I choose universal-ctags=, installed using ~yay -S uctags-git~
+Its installed by AUR at =/usr/bin/ctags=
+
+*** COMMENT For SICP.org
+#+begin_src emacs-lisp :tangle new2.el
+(defun create-sicp-tags0 ()
+  "Create tags file."
+  (shell-command "/usr/bin/ctags --output-format=etags --language-force=Scheme SICP2.org")
+  (shell-command "/usr/bin/ctags --output-format=etags --language-force=Scheme --append '/home/anoop/documents0/srfi-203/srfi/203/203.scm'")
+  (shell-command "/usr/bin/ctags --output-format=etags --language-force=Scheme --append '/home/anoop/documents0/srfi-216/srfi/216/216.scm'"))
+
+(defun update-sicp-tags0 ()
+  "Recreate the tags file."
+
+  ;;update TAGS, but still not de-duplicated:-
+  ;;(shell-command "/usr/bin/ctags --output-format=etags --language-force=Scheme --append SICP.org")
+
+  ;;I have chosen to recreate the tags file each time since its quite fast for my purposes
+  ;;If I had instead chosen to --append, then I would have to de-duplicate the generated TAGS file -
+  ;;in order to keep it from growing arbitrarily large
+  (create-sicp-tags0))
+
+(defun update-sicp-tags-and-refresh-etags0 ()
+  (interactive)
+  (update-sicp-tags0)
+  (let ((tags-revert-without-query t))  ;;dont prompt user to confirm the re-read of new TAGS file
+    (visit-tags-table default-directory nil)))
+#+end_src
+
+Update TAGS file on /Not found error/
+#+begin_src emacs-lisp :tangle new2.el
+(defadvice xref-find-definitions (around refresh-etags activate)
+  "Rerun etags and reload tags if tag not found and redo find-tag.              
+   If buffer is modified, ask about save before running etags."
+  (condition-case err
+      ad-do-it
+    (if (equal (buffer-file-name) "/home/anoop/sicp0/SICP2.org")
+        (error (and (buffer-modified-p)
+                    (not (ding))
+                    (y-or-n-p "Buffer is modified, save it? ")
+                    (save-buffer))
+               (update-sicp-tags-and-refresh-etags0)
+               ad-do-it))))
+#+end_src
+^This trick seems to be not working for me.
+
+*** For Seabiscuit
+#+begin_src emacs-lisp :tangle new2.el
+(defun create-seabiscuit-tags0 ()
+  "Create tags file."
+  (shell-command "ctags-universal --output-format=etags --language-force=Clojure app1.org")
+  ;;ctags cannot read jar files, so below fails
+  ;;(shell-command "ctags-universal --output-format=etags --language-force=Clojure --recurse=yes --append '/home/anup/.m2/repository/'")
+  )
+#+end_src
+I have a workaround for ctags not being able to read jar files.
+For library code, I will just go into clojure mode using =C-c '= and then press =M-.= which Cider will magically handle.
+
+#+begin_src emacs-lisp :tangle new2.el
+(defun update-seabiscuit-tags0 ()
+  "Recreate the tags file."
+  ;;update TAGS, but still not de-duplicated:-
+  ;;(shell-command "ctags-universal --output-format=etags --language-force=Clojure --append app1.org")
+
+  ;;I have chosen to recreate the tags file each time since its quite fast for my purposes
+  ;;If I had instead chosen to --append, then I would have to de-duplicate the generated TAGS file -
+  ;;in order to keep it from growing arbitrarily large
+  (create-seabiscuit-tags0))
+
+(defun update-seabiscuit-tags-and-refresh-etags0 ()
+  (interactive)
+  (update-seabiscuit-tags0)
+  (let ((tags-revert-without-query t))  ;;dont prompt user to confirm the re-read of new TAGS file
+    (visit-tags-table default-directory nil)))
+#+end_src
+
+Update TAGS file on /Not found error/
+#+begin_src emacs-lisp :tangle new2.el
+(defadvice xref-find-definitions (around refresh-etags activate)
+  "Rerun etags and reload tags if tag not found and redo find-tag.              
+   If buffer is modified, ask about save before running etags."
+  (message "It was indeed called")
+  (condition-case err
+      ad-do-it
+    (if (equal (buffer-file-name) "/home/anup/vet0/app1/app1.org")
+        (error (and (buffer-modified-p)
+                    (not (ding))
+                    (y-or-n-p "Buffer is modified, save it? ")
+                    (save-buffer))
+               (update-seabiscuit-tags-and-refresh-etags0)
+               ad-do-it))))
+#+end_src
+^This trick is not working for me.
+*** COMMENT john kitchen
+I have disabled this because I prefer a simplified version of this library that I customised myself.
+https://youtu.be/v3CeZ9TaAWo?t=383
+#+begin_src emacs-lisp :tangle new2.el
+(use-package scimax-literate-programming
+  :quelpa (scimax-literate-programming
+           :fetcher url
+	   :url "https://raw.githubusercontent.com/jkitchin/scimax/master/scimax-literate-programming.el")
+  :ensure nil
+  :config
+  (add-to-list 'scimax-lp-etags-language-map
+               '("js2" . "javascript"))
+  ;;I will manually regenerate the TAGS file:-
+  ;;(setq scimax-lp-update-tags-always nil)
+  ;;^Theres a bug, it needs to be true for even the manual tag generation to succeed.
+  )
+#+end_src
+
+*** COMMENT anoop's simplest TAGS generator for literate org js blocks
+Run universal-ctags on a stripped version of the ORG-FILE in LANG mode.
+This should run universal-ctags on a version of the org-file where all
+content that is not a src-block in LANG that is supposed to be
+tangled has been stripped out. This is done dangerously; the
+current buffer is erased and replaced with the stripped content
+so that universal-ctags believes it is the right file, then the content is
+replaced back. This is done inside an `atomic-change-group' which
+should make this a safe operation.
+#+begin_src emacs-lisp :tangle new2.el
+(defun scimax-lp-update-lang-tags (org-file)
+  (message "Updating javascript tags in %s" org-file)
+  (with-current-buffer (find-file-noselect org-file)
+    (save-buffer)
+
+    (let* ((content-bak (buffer-string)))
+      ;; This has potential for disaster since it deletes the buffer! I think
+      ;; this is pretty safe, but you should be prepared for disaster. If
+      ;; there is any error in this, I think it undoes the buffer damage.
+      (atomic-change-group
+        <<Strip prose from this org buffer>>
+        <<Execute universal-ctags>>
+        ;; now restore the orgfile to include both prose and code
+        (erase-buffer)
+        (insert content-bak)
+        (save-buffer)))))
+#+end_src
+
+I will be using universal-ctags, because it is a maintained fork of ctags & it supports javascript language
+#+begin_src emacs-lisp :noweb-ref "Execute universal-ctags"
+(shell-command (format "/usr/bin/ctags --output-format=etags --language-force=javascript %s" org-file))
+#+end_src
+
+The following procedures removes all prose from an org buffer.
+Only javascript code is retained in the org file, at their original line numbers.
+After this operation, the org file is a valid javascript file.
+#+begin_src emacs-lisp :noweb-ref "Strip prose from this org buffer"
+(goto-char (point-min))
+(while (and (not (eobp)))
+  (if (and (org-in-src-block-p)
+	   (string= "js2" (car (org-babel-get-src-block-info 'light)))
+	   )
+      (let* ((src (org-element-context))
+	     (end (org-element-property :end src))
+	     (len (length (buffer-substring
+			   (line-beginning-position)
+			   (line-end-position))))
+	     newend)
+	(setf (buffer-substring
+	       (line-beginning-position)
+	       (line-end-position))
+	      "")
+	;; Now skip to end, and go back to then src delimiter and
+	;; eliminate that line.
+	(goto-char (- end len))
+	(forward-line (- (* -1 (org-element-property :post-blank src)) 1))
+	(setf (buffer-substring
+	       (line-beginning-position)
+	       (line-end-position)) ""))
+    (setf (buffer-substring
+	   (line-beginning-position)
+	   (line-end-position)) ""))
+  (forward-line 1))
+(save-buffer)
+#+end_src
+
+Lets create a simple and memorable =M-x= UI for the above function
+This function generate a TAGS file for all js source blocks in the input org file. It also loads the generate TAGS for xref usage.
+In other words, you just call this function to enable =M-.= and =M-,= during literate programming using javascript+orgmode.
+#+begin_src emacs-lisp :tangle new2.el
+(defun js-tags-activate0 ()
+  "Generate TAGS file, tell xref to use this new TAGS file."
+  (interactive)
+  (when (eq major-mode 'org-mode)
+    (save-buffer)
+    (let ((current-point (point)))
+      (scimax-lp-update-lang-tags (buffer-file-name))
+      (goto-char current-point)))
+  (visit-tags-table (format "%sTAGS" (file-name-directory (buffer-file-name)))
+                    'only-locally))
+#+end_src
+
+#+begin_src emacs-lisp :tangle new2.el
+(defun test ()
+  (interactive)
+  (message (buffer-file-name)))
+#+end_src
+
+I disabled this over a simpler version where no stripping of prose is done on the org buffer.
+
+** Go to definition using dumb-jump - uses ripgrep internally
+*** xref must use vertico
+Tell xref to use the vertico + consult interface
+Use Consult to select xref locations with preview
+#+begin_src emacs-lisp :tangle new2.el
+(setq xref-show-xrefs-function #'consult-xref
+      xref-show-definitions-function #'consult-xref)
+#+end_src
+
+*** install dumb-jump
+This works without the need for any TAGS file.
+It uses xref as its frontend. ie, it acts as a backend to xref interface.
+#+begin_src emacs-lisp :tangle new2.el
+(use-package dumb-jump
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+  (setq dumb-jump-force-searcher 'ag)
+  <<dumb-jump config>>)
+#+end_src
+
+**** ag
+I found ag respects .dumbjump file more strictly. I love this feature. Also, ag seems like the preferred tool by dumbjump author.
+**** CANCELLED rg
+I had to build ripgrep myself.
+#+begin_quote
+PCRE2 is not available in this build of ripgrep [apt install ripgrep].
+#+end_quote
+#+begin_quote https://github.com/BurntSushi/ripgrep?tab=readme-ov-file#installation
+Finally, optional PCRE2 support can be built with ripgrep by enabling the pcre2 feature:
+$ cd ~/Documents/ripgrep && cargo install --features 'pcre2' --path .
+#+end_quote
+
+**** not working in app1.org file
+Dumbjump added support for org babel source blocks. But, I dont like their implementation.
+
+I would rather force it to treat org files similar to clojure files. This ensures that dumbjump works well on app1.org.
+Hence, disable their org babel support.
+
+#+begin_src emacs-lisp :noweb-ref "dumb-jump config"
+(defun dumb-jump-get-language-in-org ()
+  "In org mode, always lie to dumbjump machine that you are NOT inside any src block"
+  "org")
+#+end_src
+~(setq dumb-jump-debug t)~ is super useful in debugging issues.
+
+*** Also use clojure definitions when dumb-jumping inside org files
+**** COMMENT try1
+Ask it to treat org files using the same regexes its uses for clojure files. As a result, this setup has a limitation. It works only for org babel clojure blocks.
+#+begin_src emacs-lisp :noweb-ref "dumb-jump config"
+(add-to-list 'dumb-jump-language-file-exts '(:language "clojure" :ext "org" :agtype "clojure" :rgtype "clojure"))
+#+end_src
+^If I could use the org babel language header to dynamically set the value of ~dumb-jump-language-file-exts~, then this can work for any org-babel block.
+This PR might fix this problem soon [[https://github.com/jacktasia/dumb-jump/pull/411][gh pr]]
+
+Above did not work reliably for some reason. Since try2 succeeded, I gave up this approach
+
+**** try2
+Add Clojure rules to Org mode in Dumb Jump. Idea stolen from [[https://github.com/jacktasia/dumb-jump/issues/441][org-babel Support? · Issue #441 · jacktasia/dumb-jump]]
+#+begin_src emacs-lisp :noweb-ref "dumb-jump config"
+(let ((clojure-rules (cl-remove-if-not (lambda (rule)
+                                          (string= (plist-get rule :language) "clojure"))
+                                        dumb-jump-find-rules)))
+    (setq dumb-jump-find-rules
+          (append dumb-jump-find-rules
+                  (mapcar (lambda (rule)
+                            (plist-put (copy-tree rule) :language "org"))
+                          clojure-rules))))
+#+end_src
+
+dumb-jump doesnt have any prebuilt rule for clojurescript. Need to fix that first
+
+Since cljs uses the same syntax as clj, I do not need to seperately add the above mod for cljs. The clj regex will work just as well for cljs.
+Because, I am adding rules for org file, not a cljs file. A clj rule will also search cljs definitions in the org file.
+
+*** Intelligently route /go to definition/ according to where it is called from
+If in src block header, call /go to literate definition/,
+if not, call /go to dumbjump definition/
+#+begin_src emacs-lisp :tangle new2.el
+(defun anoop/routed/goto ()
+  (interactive)
+
+  ;;push current location to xref history stack, so that xref-go-back use it to come back
+  (xref-push-marker-stack)
+  
+  (cond ((anup/looking-at-literate-usage?) (call-interactively 'anup/goto-definition))
+        ((anup/looking-at-literate-definition?) (call-interactively 'anup/goto-usage))
+        (t (call-interactively 'xref-find-definitions))))
+#+end_src
+^Dumb-jump uses xref as its interface. Hence, the keybindings continue to point to xref. ie, the default case of cond indirectly calls dumb-jump.
+
+Keybind them
+#+begin_src emacs-lisp :noweb-ref "From/Literate Programming. To/org/org-mode-map/bind_star"
+("M-." . anoop/routed/goto)
+("M-," . xref-go-back)
+#+end_src
+
+Someday, I might make dumb-jump completely replace ~anup/looking-at-...~ functions. [[https://github.com/jacktasia/dumb-jump/issues/453][Support org src named blocks · Issue #453 · jacktasia/dumb-jump]]
+
+** literate shell scripting
+Currently, ob-shell & ob-bash doesnt respect my .bashrc
+Currently, I dont trust exec-path-from-shell.el package, because I vaguely recall it causing me problems in the past.
+
+Therefore, I will trick bash into loading my .bashrc my telling it to always execute ob-shell code interactively.
+Interactive shells always load the .bashrc
+Update:- This causes some trouble when I C-c C-c, so I disable this buggy solution.
+#+begin_src emacs-lisp :tangle new2.el
+;;+(setq shell-command-switch "-ic")+
+#+end_src
+
+Alternate solution,
+Load the .bashrc by specifying an appropriate ENV variable
+#+begin_src emacs-lisp :tangle new2.el
+(setenv "BASH_ENV" (expand-file-name "~/.bashrc"))
+#+end_src
+
+Load aliases defined in .bashrc even for non-login non-interactive shells. For this you need to add the following to your bashrc.
+#+begin_src bash
+shopt -s expand_aliases
+#+end_src
+** Sticky the current org heading as the topmost line of the buffer
+Its available on melpa
+#+begin_src emacs-lisp :tangle new2.el
+(use-package org-sticky-header
+  :hook
+  ((org-mode . org-sticky-header-mode))
+  :config
+  <<Patched definition of org-sticky-header--fetch-stickyline>>
+  (setq org-sticky-header-full-path 'reversed)
+  <<org-sticky-header/config>>)
+#+end_src
+
+Below will fix the problem of the heading being show twice sometimes.
+#+begin_src emacs-lisp :noweb-ref "org-sticky-header/config"
+(setq org-sticky-header-always-show-header nil)
+#+end_src
+
+Someday, I would like to customize the theme of the sticky line, so that it will never be confused with the orgmode's own headings. [[https://github.com/alphapapa/org-sticky-header/issues/25][hints on how to do this]]
+
+Below will further help in differentiating the sticky line from a normal editable buffer line. A wierd untypable character (such as 🫲⏪◀🠈🢨🠜🢀) in that line will make my brain notice that this line is autogenerated, and not typed out.
+#+begin_src emacs-lisp :noweb-ref "org-sticky-header/config"
+(setq org-sticky-header-outline-path-reversed-separator " ⏪ ")
+#+end_src
+Ended up picking the orange one because it stands out the most amongst typed out text.
+
+Please dont show those ugly org asterisks
+#+begin_src emacs-lisp :noweb-ref "org-sticky-header/config"
+(setq org-sticky-header-heading-star " ")
+#+end_src
+
+BTW, clicking on the sticky line will take you to that heading. ie, equivalent functionality as =C-c C-p=
+
+*** bugfix
+#+begin_quote There is a bug which returns a nil sticky header, instead of returning blank string ""
+Error during redisplay: (eval (progn (setq org-sticky-header-stickyline (propertize (org-sticky-header--fetch-stickyline) 'keymap org-sticky-header-keymap)) (list (propertize " " 'display '((space :align-to 0))) 'org-sticky-header-stickyline))) signaled (wrong-type-argument stringp nil) [5 times]
+#+end_quote
+
+#+begin_src emacs-lisp :noweb-ref "Patched definition of org-sticky-header--fetch-stickyline"
+(defun org-sticky-header--fetch-stickyline ()
+  "Return string of Org heading or outline path for display in header line."
+  (org-with-wide-buffer
+   (goto-char (window-start))
+   (if (org-before-first-heading-p)
+       ""
+       ;; No non-header lines above top displayed header
+       (if (or org-sticky-header-always-show-header
+               (not (org-at-heading-p)))
+           (progn
+             ;; Header should be shown
+             (when (fboundp 'org-inlinetask-in-task-p)
+               ;; Skip inline tasks
+               (while (and (org-back-to-heading)
+                           (org-inlinetask-in-task-p))
+                 (forward-line -1)))
+             (cond
+              ;; TODO: Update minimum Emacs version and use `pcase'.
+              ((null org-sticky-header-full-path)
+               (concat (org-sticky-header--get-prefix)
+                       (org-sticky-header--heading-string)))
+              ((eq org-sticky-header-full-path 'full)
+               (concat (org-sticky-header--get-prefix)
+                       (mapconcat 'identity
+                                  (nreverse
+                                   (save-excursion
+                                     (cl-loop collect (org-sticky-header--heading-string)
+                                              while (org-up-heading-safe))))
+                                  org-sticky-header-outline-path-separator)))
+              ((eq org-sticky-header-full-path 'reversed)
+               (let ((s (concat
+                         (org-sticky-header--get-prefix)
+                         (mapconcat 'identity
+                                    (save-excursion
+                                      (cl-loop collect (org-sticky-header--heading-string)
+                                               while (org-up-heading-safe)))
+                                    org-sticky-header-outline-path-reversed-separator))))
+                 (if (> (string-width s) (window-width))
+                     (concat (substring s 0 (- (window-width) 2))
+                             "..")
+                   s)))
+              (t "")))
+         
+         ""))))
+#+end_src

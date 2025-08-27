@@ -1,0 +1,70 @@
+* Literate Programming IDE (Emacs Lisp & Org Mode) - Key Features
+
+This document summarizes the features of a highly customized Literate Programming IDE built using Emacs Lisp and Emacs Org Mode.
+
+** Core Literate Programming Enhancements:
+
+*** Smart Noweb Reference Handling
+    Configured =org-babel= to expand noweb references (=\<\<Some Block\>\>=) by default on tangling and evaluation, but to keep them unexpanded during export (e.g., to PDF) for improved readability.
+
+*** Disabled Noweb Prefix Repetition
+    Eliminated the repetition of leading text before noweb targets in expanded code, ensuring cleaner tangled code.
+
+*** Interactive Link Navigation (=M-.= and =M-,=)
+    Implemented custom functions ( =anup/goto-definition=, =anup/goto-usage=) to intelligently jump between noweb definitions ( =:noweb-ref=) and their usages (=\<\<Target\>\>=) within the Org buffer. This feature is seamlessly integrated with =xref= and =dumb-jump=.
+
+*** Dynamic Usage and Definition Links
+    Developed a system to automatically insert and update clickable links within the Org file, showing where code blocks are defined and where they are used. This includes functions for:
+    - =find-definitions=: Identifies all =:noweb-ref= definitions and their line numbers.
+    - =find-usages=: Identifies all noweb targets (=\<\<Target\>\>=) and their usage locations.
+    - =insert-literate-links0=: Orchestrates the deletion of old links, insertion of blank placeholders, and population of actual line-numbered, hyperlinked definitions and usages.
+
+*** Error Reporting for Unresolved Nowebs
+    Configured =org-babel= to raise errors if noweb references fail to resolve across all languages, ensuring code integrity.
+
+** Emacs & Org Mode User Experience (UX) & Aesthetics:
+
+*** Rich Text Rendering
+    Enabled =org-hide-emphasis-markers= for clean display of /italics/, *bold*, +strikethrough+, _underline_, ~code~, and =verbatim= text.
+
+*** Enhanced Heading Visualization
+    - Utilizes =org-starless= to hide leading asterisks in Org headings, providing a cleaner outline view.
+    - Customized font families, sizes, backgrounds, and foregrounds for different Org heading levels (e.g., using "Arcanite Slab" and specific color schemes), enhancing visual hierarchy.
+    [[../images/1220265744-Emacs_Literate_Programming_IDE_Visual_Summary_of_Features.png]]
+    
+
+*** Intelligent Line Wrapping
+    Integrated =adaptive-wrap= and =visual-line-mode= to ensure wrapped lines maintain proper indentation, improving readability of long paragraphs.
+
+*** Selective Content Visibility
+    - Set =org-startup-folded= to "nofold" to show all content unfolded by default, except for =PROPERTIES= drawers.
+    - =org-hide-drawer-startup= hides result and other drawers on file open, reducing visual clutter.
+    - (Previously) Implemented a feature to hide source blocks marked with =:hidden= on file startup, encouraging a prose-first reading experience.
+
+*** Custom Code Block Theming
+    - Configured =org-block-begin-line=, =org-block-end-line=, and =org-block= faces to provide subdued, GitHub-like light grey backgrounds for source blocks, and less obtrusive delimiters.
+    - Enabled =rainbow-mode= in Emacs Lisp buffers to display hex color codes, aiding theme customization.
+    - Customized the appearance of =:PROPERTIES:= drawers and special keywords with subdued foregrounds and white backgrounds.
+
+*** Cursor Visibility
+    Enhanced cursor color to "red" for improved visibility across various themes.
+
+*** Full Line Fontification
+    Enabled =org-fontify-whole-block-delimiter-line= and =org-fontify-whole-heading-line= for consistent background coloring of entire heading and source block delimiter lines.
+
+*** Org Variable Pitch Mode
+    Utilizes =org-variable-pitch= to intelligently switch between serif (=Alegreya=/=Atkinson Hyperlegible=) for prose and monospace for code/checkboxes, ensuring consistent vertical alignment.
+
+*** Org Sticky Header
+    Implemented =org-sticky-header= to keep the current Org heading visible at the top of the buffer, with a custom, visually distinct separator " ⏪ " and hidden asterisks, enhancing navigation in long documents.
+
+** Development & Tooling Integration:
+
+*** Robust Navigation (Dumb Jump & Xref)
+    Configured =dumb-jump= as the backend for =xref= ( =M-.=) using =consult-xref= for interactive selection with preview. Custom rules were added to =dumb-jump= to specifically treat Org files as Clojure files, enabling effective definition-finding within Clojure/ClojureScript Org Babel blocks.
+
+*** Custom Literate Shell Scripting
+    Configured =ob-shell= to load =.bashrc= aliases and environment variables, ensuring consistent shell behavior within Org Babel code blocks.
+
+*** Export Control
+    Set =org-export-with-sub-superscripts= to ={}= to prevent underscores and carets from being misinterpreted as subscripts/superscripts in exported documents, while still allowing explicit ={}= -enclosed subscripts/superscripts.
