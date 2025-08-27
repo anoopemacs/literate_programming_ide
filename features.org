@@ -30,8 +30,7 @@ This document summarizes the features of a highly customized Literate Programmin
 *** Enhanced Heading Visualization
     - Utilizes =org-starless= to hide leading asterisks in Org headings, providing a cleaner outline view.
     - Customized font families, sizes, backgrounds, and foregrounds for different Org heading levels (e.g., using "Arcanite Slab" and specific color schemes), enhancing visual hierarchy.
-    [[../images/1220265744-Emacs_Literate_Programming_IDE_Visual_Summary_of_Features.png]]
-    
+
 
 *** Intelligent Line Wrapping
     Integrated =adaptive-wrap= and =visual-line-mode= to ensure wrapped lines maintain proper indentation, improving readability of long paragraphs.
